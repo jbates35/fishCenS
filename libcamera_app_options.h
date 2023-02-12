@@ -56,16 +56,16 @@ public:
         saturation=1.0f;
         contrast=1.0f;
         sharpness=1.0f;
-	brightness=0.0f;
-	shutter=0.0f;
-	gain=0.0f;
-	ev=0.0f;
-	roi_x=roi_y=roi_width=roi_height=0;
-	awb_gain_r=awb_gain_b=0;
-        denoise="auto";
-        verbose=false;
-	transform=libcamera::Transform::Identity;
-	camera=0;
+		brightness=0.0f;
+		shutter=0.0f;
+		gain=0.0f;
+		ev=0.0f;
+		roi_x=roi_y=roi_width=roi_height=0;
+		awb_gain_r=awb_gain_b=0;
+		denoise="auto";
+		verbose=false;
+		transform=libcamera::Transform::Identity;
+		camera=0;
 	}
 
 	virtual ~Options() {}

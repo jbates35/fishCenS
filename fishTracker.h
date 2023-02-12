@@ -63,7 +63,7 @@ enum
 #define MAX_TRACKER_DURATION 30 //(seconds)
 
 //Struct keeping track of parameters of fish
-struct fishTrackerStruct
+struct FishTrackerStruct
 {
 	Ptr<Tracker> tracker;
 	vector<int> posX;
@@ -80,18 +80,18 @@ struct fishTrackerStruct
  * @date January 29 2023
  *
  **/
-class fishTracker
+class FishTracker
 {
 public:
     /**
      * @brief Constructor, does nothing, as init() is used
      **/
-	fishTracker();
+	FishTracker();
 
     /**
      * @brief Destructor does nothing currently
      **/
-	~fishTracker();
+	~FishTracker();
 	
     /**
      * @brief Run thread for parent class
@@ -282,7 +282,7 @@ private:
 	int _minCombinedRectArea; // Minimum shared area between overlapping rects
 	
 	//Parameters for tracking
-	vector<fishTrackerStruct> _fishTracker; //Holds all tracked object information
+	vector<FishTrackerStruct> _fishTracker; //Holds all tracked object information
 	float _marginProportion; //Essentially, percentage margins should be set to to consider object "on the edge"
 	int _retrackPixels; //When occlusion occurs, what size of area around the ROI to look for an untracked object
 	int _retrackFrames; //When an object has been lost, how many frames to keep looking for the object before deleting object from vector

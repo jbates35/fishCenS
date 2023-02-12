@@ -1,16 +1,16 @@
 #include "fishTracker.h"
 
 //Nothing is needed in constructor, using init() instead
-fishTracker::fishTracker()
+FishTracker::FishTracker()
 {
 }
 
-fishTracker::~fishTracker()
+FishTracker::~FishTracker()
 {
 }
 
 
-bool fishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, vector<Rect>& ROIRects)
+bool FishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, vector<Rect>& ROIRects)
 {
 	//Make automatic mutex control
 	lock_guard<mutex> guard(lock);
@@ -195,7 +195,7 @@ bool fishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, ve
 			if (!fishOverlappedROIs && !fishRetracked)
 			{					
 				//Initialize struct that keeps track of the tracking info
-				fishTrackerStruct tempTracker;					
+				FishTrackerStruct tempTracker;					
 				tempTracker.isTracked = true;
 				tempTracker.tracker = TrackerKCF::create();					
 				tempTracker.tracker->init(frameRaw, contourRectROI);
@@ -256,7 +256,7 @@ bool fishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, ve
 }
 
 
-bool fishTracker::init(unsigned int video_width, unsigned int video_height, Scalar rangeMin /* = Scalar(0,0,0) */, Scalar rangeMax /* = Scalar(180,255,255) */)
+bool FishTracker::init(unsigned int video_width, unsigned int video_height, Scalar rangeMin /* = Scalar(0,0,0) */, Scalar rangeMax /* = Scalar(180,255,255) */)
 {
 	//Clear fish tracking vector
 	_fishTracker.clear();
@@ -314,44 +314,44 @@ bool fishTracker::init(unsigned int video_width, unsigned int video_height, Scal
 }
 
 //Sets testMode for displaying important parameters 
-void fishTracker::setTestMode(int testMode)
+void FishTracker::setTestMode(int testMode)
 {
 	_testMode = testMode;
 }
 
 //Setter for erode size
-void fishTracker::setErode(Size erodeSize)
+void FishTracker::setErode(Size erodeSize)
 {
 	_erodeSize = erodeSize;
 }
 
 //Getter for erode size
-Size fishTracker::getErode()
+Size FishTracker::getErode()
 {
 	return _erodeSize;
 }
 	
 //Setter for dilate size
-void fishTracker::setDilate(Size dilateSize)
+void FishTracker::setDilate(Size dilateSize)
 {
 	_dilateSize = dilateSize;
 }
 
 //Getter for dilate size
-Size fishTracker::getDilate()
+Size FishTracker::getDilate()
 {
 	return _dilateSize;
 }
 
 //Setting HSV range for when you want to change both
-void fishTracker::setRange(Scalar rangeMin, Scalar rangeMax)
+void FishTracker::setRange(Scalar rangeMin, Scalar rangeMax)
 {
 	_rangeMin = rangeMin;
 	_rangeMax = rangeMax;
 }
 
 //Setting HSV range for just either min or max
-void fishTracker::setRange(Scalar range, int type)
+void FishTracker::setRange(Scalar range, int type)
 {
 	if (type == RANGE_MAX)
 	{
@@ -364,7 +364,7 @@ void fishTracker::setRange(Scalar range, int type)
 }
 
 //Get HSV range
-Scalar fishTracker::getRange(int type)
+Scalar FishTracker::getRange(int type)
 {
 	//Either min or max, depending on type
 	Scalar returnScalar;
@@ -382,91 +382,91 @@ Scalar fishTracker::getRange(int type)
 }
 
 //Set proportion of frame that will be considered the "edge"
-void fishTracker::setMargin(float marginProportion)
+void FishTracker::setMargin(float marginProportion)
 {
 	_marginProportion = marginProportion;
 }
 
 //Returns value of frame margin proportion
-float fishTracker::getMargin()
+float FishTracker::getMargin()
 {
 	return _marginProportion;
 }
 
 //Set region that occlusion detector will look around lost object
-void fishTracker::setRetrackRegion(int retrackPixels)
+void FishTracker::setRetrackRegion(int retrackPixels)
 {
 	_retrackPixels = retrackPixels;
 }
 
 //Returns value for occlusion detector region
-int fishTracker::getRetrackRegion()
+int FishTracker::getRetrackRegion()
 {
 	return _retrackPixels;
 }
 
 //Sets amount of frames occlusion detector will run before deleting tracker vector
-void fishTracker::setRetrackFrames(int retrackFrames)
+void FishTracker::setRetrackFrames(int retrackFrames)
 {
 	_retrackFrames = retrackFrames;
 }
 
 //Returns amount of frames occlusion detector will run before deleting tracker vector
-int fishTracker::getRetrackFrames()
+int FishTracker::getRetrackFrames()
 {
 	return _retrackFrames;
 }
 
 //Sets a scalar value that multiplies tracker ROI to save computation time
-void fishTracker::setROIScale(float rectROIScale)
+void FishTracker::setROIScale(float rectROIScale)
 {
 	_rectROIScale = rectROIScale;
 }
 
 //Returns scalar value for multiplying tracker ROI 
-float fishTracker::getROIScale()
+float FishTracker::getROIScale()
 {
 	return _rectROIScale;
 }
 
 //Sets minimum threshold that a contour must be over to be added into a tracker
-void fishTracker::setMinThresholdArea(int minArea)
+void FishTracker::setMinThresholdArea(int minArea)
 {
 	_minThresholdArea = minArea;
 }
 
 //Returns minimum threshold that a contour must be over to be added into a tracker
-int fishTracker::getMinThresholdArea()
+int FishTracker::getMinThresholdArea()
 {
 	return _minThresholdArea;
 }
 
 //Sets area two ROIs overlapping is before it's considered the ROI of a tracked object
-void fishTracker::setMinCombinedRectArea(int minArea)
+void FishTracker::setMinCombinedRectArea(int minArea)
 {
 	_minCombinedRectArea = minArea;
 }
 
 //Gets area two ROIs overlapping is before it's considered the ROI of a tracked object
-int fishTracker::getMinCombinedRectArea()
+int FishTracker::getMinCombinedRectArea()
 {
 	return _minCombinedRectArea;
 }
 
 //Sets the x_position the vertical line will be which fish crossing over will be counted
-void fishTracker::setFrameCenter(int center)
+void FishTracker::setFrameCenter(int center)
 {
 	_frameMiddle = center;
 }
 
 //Gets the x_position the vertical line will be which fish crossing over will be counted
-int fishTracker::getFrameCenter()
+int FishTracker::getFrameCenter()
 {
 	return _frameMiddle;
 }
 
 //Helper that gets the current time in ymd hms and returns a string
-std::string fishTracker::_getTime()
+std::string FishTracker::_getTime()
 {
 	//Create unique timestamp for folder
 	stringstream timestamp;
@@ -524,13 +524,13 @@ std::string fishTracker::_getTime()
 
 
 //Return current time in millis like arduino
-double fishTracker::_millis()
+double FishTracker::_millis()
 {
 	return 1000 * getTickCount() / getTickFrequency();
 }
 
 //Helper function for 
-void fishTracker::_logger(vector<string>& logger, string data)
+void FishTracker::_logger(vector<string>& logger, string data)
 {
 	//Clear first entry in the vector if buffer size is full
 	if (logger.size() > MAX_DATA_SIZE)
@@ -542,7 +542,7 @@ void fishTracker::_logger(vector<string>& logger, string data)
 }
 
 //Saves both data and elapsed tracking frame times to files
-void fishTracker::saveLogger(string fileName /* = NULL */, string filePath /* = NULL */)
+void FishTracker::saveLogger(string fileName /* = NULL */, string filePath /* = NULL */)
 {
 	//Use file-name stored in object if filename is blank
 	if (fileName.empty())
@@ -593,7 +593,7 @@ void fishTracker::saveLogger(string fileName /* = NULL */, string filePath /* = 
 }
 
 //Helper function to pull ROIs from fishTracker vector and return them as its own vector
-vector<Rect> fishTracker::_getRects()
+vector<Rect> FishTracker::_getRects()
 {
 	//Since the rects are embedded in structs, need to extract them into separate vector
 	vector<Rect> tempRects;

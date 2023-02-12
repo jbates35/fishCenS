@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <thread>
+#include <memory>
 
 #include "lccv.hpp"
 #include "fishTracker.h"
@@ -54,21 +55,24 @@ using namespace lccv;
 #define CVUI_IMPLEMENTATION
 #include "cvui.h"
 
-
-//Make fishTracker object
-fishTracker fishTrackerObj;
-std::mutex fishLock;
-vector<Rect> ROIRects;	
-Mat frameRaw, frameProc;
-int fishCount;
-
-void trackerStart();
+void trackingThreadStart(FishTracker& thisObj, Mat& im, Mat& imProc, mutex& lock, int& fishCount, vector<Rect>& ROIRects);
 
 int main(int argc, char *argv[])
 {		
 	
+	//Parameters for tracking fish, ROIs, and fish counter
+	FishTracker fishTrackerObj;
+	vector<Rect> ROIRects;	
+	int fishCount=0;
+
+	//Mutex for running tracker
+	std::mutex fishLock;
+
+	//Mats for image processing
+	Mat frameRaw, frameProc;
 	Mat output, fgMask, frame;
 
+	//Main pi cam
 	PiCamera cam;
 
 	cam.options->video_width = VIDEO_WIDTH;
@@ -92,9 +96,9 @@ int main(int argc, char *argv[])
 			continue; // Restart while loop
         }
 
-		// fishTrackerObj.run(frameRaw, frameProc, fishLock, fishCount, ROIRects);	
-		thread runThread(trackerStart);
-		runThread.join();
+		//Remove bg, run tracker, do image processing
+		thread trackingThread(&FishTracker::run, fishTrackerObj, ref(frameRaw), ref(frameProc), ref(fishLock), ref(fishCount), ref(ROIRects));
+		trackingThread.join();
 
 		//Display rects
 		for (auto roi : ROIRects)
@@ -114,10 +118,4 @@ int main(int argc, char *argv[])
 	//End session with opencv
 	cam.stopVideo();
 	destroyAllWindows();	
-}
-
-//For threading
-void trackerStart() 
-{
-	fishTrackerObj.run(frameRaw, frameProc, fishLock, fishCount, ROIRects);
 }

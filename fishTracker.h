@@ -281,6 +281,9 @@ private:
 	int _minThresholdArea; // Contour area must be greater than this to be added to tracker
 	int _minCombinedRectArea; // Minimum shared area between overlapping rects
 	
+    //Parameters for BG Removal
+    Ptr<BackgroundSubtractor> _pBackSub;
+
 	//Parameters for tracking
 	vector<FishTrackerStruct> _fishTracker; //Holds all tracked object information
 	float _marginProportion; //Essentially, percentage margins should be set to to consider object "on the edge"

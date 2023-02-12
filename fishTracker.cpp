@@ -23,7 +23,7 @@ bool FishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, ve
 	}
 	
 	//Make new Mat so it can be used without needing mutex
-	Mat frameRaw, frameProcessed;
+	Mat frameRaw, frameProcessed, frameMask;
 	im.copyTo(frameRaw);
 	im.copyTo(frameProcessed);
 	
@@ -265,6 +265,9 @@ bool FishTracker::init(unsigned int video_width, unsigned int video_height, Scal
 	_loggerData.clear();
 	_loggerCsv.clear();
 	
+	//Background removal object initialization
+	_pBackSub = cv::createBackgroundSubtractorKNN();
+
 	//Default params for erode
 	_erodeSize = DEFAULT_ERODE_SIZE;
 	_erodeAmount = DEFAULT_ERODE_AMOUNT;

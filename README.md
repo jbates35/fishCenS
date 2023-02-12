@@ -23,3 +23,35 @@ cd build
 cmake ..
 make
 ```
+
+You'll likely want to make your own branch (please for the love of god do):
+
+```
+cd ~/fishCenS/
+git checkout -b "myNewBranch"
+```
+
+After doing so, now you can work on your own code, add files, whatever. Once you're done, you need to commit your files, and then push
+```
+git add . 
+git commit -m "My commit description goes here"
+git push
+```
+
+After coming back the next day, there may be updates on the remote repository (i.e. on github). Do:
+```
+git fetch
+```
+to see if there are.
+
+If you want to integrate the changes into what you're working on, feel free to use
+```
+git pull
+```
+Be careful, make sure you commit all your changes you want to keep before using git pull.
+
+In the cmake file, whenever you add a new file, you want to add it here:
+![image](https://user-images.githubusercontent.com/70033294/218302179-2f91b61e-8081-466a-b324-c7d3f3a45e21.png)
+
+If you prefer working in codeblocks, refer to this stackoverflow page on how to do so:
+https://stackoverflow.com/questions/37618040/how-to-create-a-codeblocks-project-from-the-cmake-file

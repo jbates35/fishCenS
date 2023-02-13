@@ -100,19 +100,23 @@ int main(int argc, char *argv[])
 		thread trackingThread(&FishTracker::run, fishTrackerObj, ref(frameRaw), ref(frameProc), ref(fishLock), ref(fishCount), ref(ROIRects));
 		trackingThread.join();
 
-		//Display rects
-		for (auto roi : ROIRects)
-		{
-			rectangle(frameRaw, roi, Scalar(255, 0, 255), 2);
-		}
-
-		//Display information
-		string fishDisplayStr = "Current fish: " + to_string(fishCount);
-		putText(frameRaw, fishDisplayStr, Point(40, 40), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 2);
-
 		//Display video
-		imshow("Video", frameRaw);
-		escKey = waitKey(1);
+		if(!frameRaw.empty())
+		{		//Display rects
+			for (auto roi : ROIRects)
+			{
+				rectangle(frameRaw, roi, Scalar(255, 0, 255), 2);
+			}
+
+			//Display information
+			string fishDisplayStr = "Current fish: " + to_string(fishCount);
+			putText(frameRaw, fishDisplayStr, Point(40, 40), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 2);
+			
+			imshow("Video", frameRaw);
+			imshow("Processed", frameProc);		
+
+			escKey = waitKey(1);
+		}
 	}	
 	
 	//End session with opencv

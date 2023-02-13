@@ -11,6 +11,7 @@ add_compile_options(-Wall -Wextra -pedantic -Wno-unused-parameter -faligned-new)
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
 set(LIBRARIES_FROM_REFERENCES "")
+
 add_executable(fishCenS fishCenS.cpp fishTracker.cpp fishTracker.h cvui.h lccv.cpp lccv.hpp libcamera_app.cpp libcamera_app.h libcamera_app_options.cpp libcamera_app_options.h)
 
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
@@ -96,19 +97,6 @@ message(STATUS "    version: ${LIBCAMERA_VERSION}")
 message(STATUS "    libraries: ${LIBCAMERA_LINK_LIBRARIES}")
 message(STATUS "    include path: ${LIBCAMERA_INCLUDE_DIRS}")
 include_directories(include ${LIBCAMERA_INCLUDE_DIRS} ${pigpio_INCLUDE_DIR} ${OPENCV_INCLUDE_DIRS})
-
-include(GNUInstallDirs)
-
-set(SOURCES
-    src/lccv.cpp
-    src/libcamera_app.cpp
-    src/libcamera_app_options.cpp
-)
-set(HEADERS
-    include/lccv.hpp
-    include/libcamera_app.hpp
-    include/libcamera_app_options.hpp
-)
 
 set_target_properties(fishCenS PROPERTIES PREFIX "" IMPORT_PREFIX "")
 target_link_libraries(fishCenS pthread ${CMAKE_THREAD_LIBS_INIT} ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} "${LIBRARIES_FROM_REFERENCES}")

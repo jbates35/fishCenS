@@ -24,9 +24,14 @@ bool FishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, ve
 	
 	//Make new Mat so it can be used without needing mutex
 	Mat frameRaw, frameProcessed, frameMask;
-	im.copyTo(frameRaw);
-	im.copyTo(frameProcessed);
+	frameRaw = Mat::zeros(_frameSize, CV_8UC3);
 	
+	//First, get mask of image
+	_pBackSub->apply(im, frameMask);
+
+	//Copy only parts of the image that moved
+	im.copyTo(frameRaw, frameMask);
+
 	//Get time for measuring elapsed tracking time
 	_timer = _millis();
 
@@ -90,7 +95,7 @@ bool FishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, ve
 	_timer = _millis();
 	
 	//Change Color to HSV for easier thresholding
-	cvtColor(frameProcessed, frameProcessed, COLOR_BGR2HSV);
+	cvtColor(frameRaw, frameProcessed, COLOR_BGR2HSV);
 	
 	//Erode and dilate elements for eroding and dilating image
 	Mat erodeElement = getStructuringElement(MORPH_RECT, _erodeSize);
@@ -208,49 +213,47 @@ bool FishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, ve
 				
 				_logger(_loggerData, "Object found");
 			}																	
-		}		
-			
-		//Parse through all fish trackers, from end to beginning, and execute any code if tracking has been lost
-		//Must go backwards else this algorithm will actually skip elements
-		for (int i = _fishTracker.size() - 1; i >= 0; i--) 
-		{
-			if (!_fishTracker[i].isTracked)
-			{	
-				//Count amount of frames the fish has been lost for
-				_fishTracker[i].lostFrameCount++;
-					
-				//See if the item is just on the edge
-				bool isOnEdge = false;
-					
-				//Sees if the object is on the horizontal edges of the frame
-				if ((_fishTracker[i].roi.x + _fishTracker[i].roi.width / 2) < _frameSize.width*_marginProportion || (_fishTracker[i].roi.x + _fishTracker[i].roi.width / 2) > _frameSize.width*(1 - _marginProportion))
-				{
-					isOnEdge = true;
-				}
-					
-				if (_fishTracker[i].lostFrameCount >= _retrackFrames || isOnEdge == true)
-				{
-					//After trying to retrack a while, element cannot be found so it should be removed from overall vector list
-					_fishTracker.erase(_fishTracker.begin() + i);
-					_logger(_loggerData, "TRACKING LOST FOR ELEMENT: " + to_string(i + 1));											
-				}
-			}
-			else
-			{
-				//Reset if fish has been found again
-				_fishTracker[i].lostFrameCount = 0;
-			}				
 		}
-		
-
-		//Delete this if we're not interested in having the processed frame in the main script
-		frameProcessed.copyTo(imProcessed);
-		
-		//Copy rects from fishTracker vector to parent class
-		ROIRects.clear();
-		ROIRects = _getRects();
-		
+	}		
+			
+	//Parse through all fish trackers, from end to beginning, and execute any code if tracking has been lost
+	//Must go backwards else this algorithm will actually skip elements
+	for (int i = _fishTracker.size() - 1; i >= 0; i--) 
+	{
+		if (!_fishTracker[i].isTracked)
+		{	
+			//Count amount of frames the fish has been lost for
+			_fishTracker[i].lostFrameCount++;
+				
+			//See if the item is just on the edge
+			bool isOnEdge = false;
+				
+			//Sees if the object is on the horizontal edges of the frame
+			if ((_fishTracker[i].roi.x + _fishTracker[i].roi.width / 2) < _frameSize.width*_marginProportion || (_fishTracker[i].roi.x + _fishTracker[i].roi.width / 2) > _frameSize.width*(1 - _marginProportion))
+			{
+				isOnEdge = true;
+			}
+				
+			if (_fishTracker[i].lostFrameCount >= _retrackFrames || isOnEdge == true)
+			{
+				//After trying to retrack a while, element cannot be found so it should be removed from overall vector list
+				_fishTracker.erase(_fishTracker.begin() + i);
+				_logger(_loggerData, "TRACKING LOST FOR ELEMENT: " + to_string(i + 1));											
+			}
+		}
+		else
+		{
+			//Reset if fish has been found again
+			_fishTracker[i].lostFrameCount = 0;
+		}				
 	}
+		
+	//Delete this if we're not interested in having the processed frame in the main script
+	frameRaw.copyTo(imProcessed);
+	
+	//Copy rects from fishTracker vector to parent class
+	ROIRects.clear();
+	ROIRects = _getRects();
 	
 	return true;
 }

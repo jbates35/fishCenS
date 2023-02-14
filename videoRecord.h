@@ -18,20 +18,21 @@ using namespace std;
 enum
 {
 	VIDEO_OFF,
+	VIDEO_SETUP,
 	VIDEO_ON
 };
 
 #define MAX_DATA_SIZE 10000 // Max amount of info logger can contain
 
+
 class VideoRecord
 {
 public:
-	/** @brief Initializes the video writer, i.e. fps codec size
-	 * @param frame Mat passed from camera to get first shot of video
-	 * @param fps FPS that video will be set to
-	 * @param filePath If set, folder path that video 
-	 **/
-	VideoRecord(Mat& frame, double fps, string filePath = NULL);
+
+	/**
+	 * Constructor does nothing
+	*/
+	VideoRecord();
 	
 	/**
 	 * Saves and closes video.
@@ -45,6 +46,14 @@ public:
 	 **/
 	void run(Mat& frame, mutex& lock);	
 	
+	/** @brief Initializes the video writer, i.e. fps codec size
+	 * @param frame Mat passed from camera to get first shot of video
+	 * @param lock Mutex from parent class
+	 * @param fps FPS that video will be set to
+	 * @param filePath If set, folder path that video 
+	 **/
+	void init(Mat& frame, mutex& lock, double fps, string filePath = NULL);
+
 	/**
 	 * @brief Getter for videoWriter's isOpen
 	 * @return True if video is recording

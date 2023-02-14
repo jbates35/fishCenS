@@ -1,48 +1,7 @@
 #include "videoRecord.h"
 
-VideoRecord::VideoRecord(Mat& frame, double fps, string filePath /* = NULL */)
+VideoRecord::VideoRecord()
 {
-	//Setup filepath and filenames, first
-	if (filePath.compare(NULL))
-	{
-		_filePath = "./";
-	}
-	else
-	{
-		_filePath = filePath;
-		
-		//Append slash if there isn't one at end of string
-		if (_filePath.at(_filePath.size() - 1) != '/')
-		{
-			_filePath += '/';
-		}
-	}
-	
-	//Make timestamp filename
-	_fileName = _getTime();
-
-	//Create video parameters
-	int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
-	bool isColor = (frame.type() == CV_8UC3);
-	Size videoSize = frame.size();
-
-	_log("Starting video.");
-	_log("Frame rate is " + to_string(fps) + "fps,\t meaning period is " + to_string((double) 1000 / fps) + "ms");
-	_log("Video size is <" + to_string(videoSize.width) + ", " + to_string(videoSize.height));
-	
-	cout << "Starting video\n";
-	cout << "FPS is " + to_string(fps) + "\nMeaning period is " + to_string((double) 1 / fps) + "\n";
-	
-	//Start video timer
-	_startTime = getTickCount() / getTickFrequency();
-	
-	//Start frame counter and frame time
-	_frameCount = 0;
-	_frameTimer = getTickCount() / getTickFrequency();
-	
-	//Initailize video
-	_video.open(_filePath + _fileName + ".avi", codec, fps, videoSize, isColor);
-	
 }
 
 VideoRecord::~VideoRecord()
@@ -111,6 +70,54 @@ void VideoRecord::run(Mat& frame, mutex& lock)
 	
 	//Update frame count
 	_frameCount++;
+}
+
+void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* = NULL */)
+{	
+	//Mutex and record frame
+	lock_guard<mutex> guard(lock);
+	
+	//Setup filepath and filenames, first
+	if (filePath.compare(NULL))
+	{
+		_filePath = "./";
+	}
+	else
+	{
+		_filePath = filePath;
+		
+		//Append slash if there isn't one at end of string
+		if (_filePath.at(_filePath.size() - 1) != '/')
+		{
+			_filePath += '/';
+		}
+	}
+	
+	//Make timestamp filename
+	_fileName = _getTime();
+
+	//Create video parameters
+	int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
+	bool isColor = (frame.type() == CV_8UC3);
+	Size videoSize = frame.size();
+
+	_log("Starting video.");
+	_log("Frame rate is " + to_string(fps) + "fps,\t meaning period is " + to_string((double) 1000 / fps) + "ms");
+	_log("Video size is <" + to_string(videoSize.width) + ", " + to_string(videoSize.height));
+	
+	cout << "Starting video\n";
+	cout << "FPS is " + to_string(fps) + "\nMeaning period is " + to_string((double) 1 / fps) + "\n";
+	
+	//Start video timer
+	_startTime = getTickCount() / getTickFrequency();
+	
+	//Start frame counter and frame time
+	_frameCount = 0;
+	_frameTimer = getTickCount() / getTickFrequency();
+	
+	//Initailize video
+	_video.open(_filePath + _fileName + ".avi", codec, fps, videoSize, isColor);
+	
 }
 
 std::string VideoRecord::_getTime()

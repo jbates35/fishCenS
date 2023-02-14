@@ -56,6 +56,9 @@ private:
 	
 	//Video related
 	VideoWriter _video;
+	int _frameCount;
+	double _frameTimer;
+	vector<double> _frameTimes; 
 	
 	//File related
 	string _fileName;

@@ -36,19 +36,40 @@ VideoRecord::VideoRecord(Mat& frame, double fps, string filePath /* = NULL */)
 	//Start video timer
 	_startTime = getTickCount() / getTickFrequency();
 	
+	//Start frame counter and frame time
+	_frameCount = 0;
+	_frameTimer = getTickCount() / getTickFrequency();
+	
 	//Initailize video
 	_video.open(_filePath + _fileName + ".avi", codec, fps, videoSize, isColor);
 	
 }
 
 VideoRecord::~VideoRecord()
-{
+{ 
 	//Save video file to file
 	_video.release();
 
 	cout << "Video closed\n";
 	_log("Closing video");
 	_log("Video length: " + to_string(getTickCount()/getTickFrequency() - _startTime) + "\n");
+	
+	//Get mean of frame times
+	double frameMeanTime = (getTickCount() / getTickFrequency() - _startTime) / _frameCount;
+	
+	_log("Mean frame time: " + to_string(frameMeanTime * 1000) + "ms");
+	_log("Mean frame rate: " + to_string(1 / frameMeanTime) + "fps");
+	
+	//Now get standard deviation
+	double frameSDSquared = 0;
+	
+	for (auto frameTime : _frameTimes)
+	{
+		frameSDSquared += (frameTime - frameMeanTime)*(frameTime - frameMeanTime);
+	}
+	double frameSD = sqrt(frameSDSquared/(_frameCount-1.0));
+	
+	_log("Variance (standard deviation) of frame time: " + to_string(frameSD * 1000) + "ms");
 	
 	//Make text file and dump data
 	ofstream dataFile(_filePath + _fileName + ".txt");
@@ -75,6 +96,18 @@ void VideoRecord::run(Mat& frame, mutex& lock)
 	}
 	
 	_video.write(frame);	
+	
+	//Update timer information
+	if (_frameTimes.size() > MAX_DATA_SIZE)
+	{
+		_frameTimes.erase(_frameTimes.begin());
+	}
+	
+	_frameTimes.push_back(getTickCount() / getTickFrequency() - _frameTimer);
+	_frameTimer = getTickCount() / getTickFrequency();
+	
+	//Update frame count
+	_frameCount++;
 }
 
 std::string VideoRecord::_getTime()

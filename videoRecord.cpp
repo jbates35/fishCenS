@@ -55,21 +55,24 @@ VideoRecord::~VideoRecord()
 	_log("Video length: " + to_string(getTickCount()/getTickFrequency() - _startTime) + "\n");
 	
 	//Get mean of frame times
-	double frameMeanTime = (getTickCount() / getTickFrequency() - _startTime) / _frameCount;
-	
-	_log("Mean frame time: " + to_string(frameMeanTime * 1000) + "ms");
-	_log("Mean frame rate: " + to_string(1 / frameMeanTime) + "fps");
-	
-	//Now get standard deviation
-	double frameSDSquared = 0;
-	
-	for (auto frameTime : _frameTimes)
+	if (_frameCount > 1)
 	{
-		frameSDSquared += (frameTime - frameMeanTime)*(frameTime - frameMeanTime);
-	}
-	double frameSD = sqrt(frameSDSquared/(_frameCount-1.0));
+		double frameMeanTime = (getTickCount() / getTickFrequency() - _startTime) / _frameCount;
 	
-	_log("Variance (standard deviation) of frame time: " + to_string(frameSD * 1000) + "ms");
+		_log("Mean frame time: " + to_string(frameMeanTime * 1000) + "ms");
+		_log("Mean frame rate: " + to_string(1 / frameMeanTime) + "fps");	
+		
+		//Now get standard deviation
+		double frameSDSquared = 0;
+	
+		for (auto frameTime : _frameTimes)
+		{
+			frameSDSquared += (frameTime - frameMeanTime)*(frameTime - frameMeanTime);
+		}
+		double frameSD = sqrt(frameSDSquared / (_frameCount - 1.0));
+	
+		_log("Variance (standard deviation) of frame time: " + to_string(frameSD * 1000) + "ms");
+	}
 	
 	//Make text file and dump data
 	ofstream dataFile(_filePath + _fileName + ".txt");

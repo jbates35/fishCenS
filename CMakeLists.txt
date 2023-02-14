@@ -72,9 +72,6 @@ find_package_handle_standard_args(pigpio
     DEFAULT_MSG 
     pigpio_INCLUDE_DIR pigpio_LIBRARY pigpiod_if_LIBRARY pigpiod_if2_LIBRARY)
 
-find_package(OpenCV REQUIRED)
-
-add_compile_options(-Wall -Wextra -pedantic -Wno-unused-parameter -faligned-new -Werror -Wfatal-errors)
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
 

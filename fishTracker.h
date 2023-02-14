@@ -26,6 +26,12 @@ enum
 	ON		
 };
 
+enum 
+{        
+	NORMAL,
+	CALIBRATION,
+	TESTING
+};
 
 //Default params for eroding the image to separate balls
 #define DEFAULT_ERODE_SIZE Size(2,2)
@@ -39,7 +45,7 @@ enum
 #define MAX_DATA_SIZE 5000
 
 //Minimum area to initiate tracker to
-#define DEFAULT_MIN_AREA 2000
+#define DEFAULT_MIN_AREA 800
 
 //Minimum area of combined rect before it's considered "overlapping" 
 #define DEFAULT_COMBINED_RECT_AREA 0
@@ -73,6 +79,13 @@ struct FishTrackerStruct
     double startTime;
 };
 
+//Struct for passing additional mats
+struct returnMatsStruct
+{
+	string title;
+	Mat mat;
+};
+
 /**
  * @brief Fish Tracking class for Fish-CenS
  * @details Class that  you can pass a CV MAT and then allows you to track objects using KCF.
@@ -102,7 +115,7 @@ public:
      * @param ROIRects Vector of ROI rects parent class can have updated
      * @return True if success, false if im is empty 
      **/
-	bool run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, vector<Rect>& ROIRects);
+	bool run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock, int& fishCount, vector<Rect>& ROIRects);
 	
     /**
      * @brief Initializer (And reinitializer) for most important parameters of class
@@ -113,12 +126,6 @@ public:
      * @return True if success, false if no frame was passed or empty frame was passed
      **/
 	bool init(unsigned int video_width, unsigned int video_height, Scalar rangeMin = Scalar(0, 0, 0), Scalar rangeMax = Scalar(180, 255, 255));
-	
-    /**
-     * @brief Test mode boolean to display certain parameters on screen
-     * @param testMode OFF (0) for no test mode, ON (1) for test mode
-     **/
-	void setTestMode(int testMode);	
 	
     /**
     * @brief Setter for erode size
@@ -268,6 +275,12 @@ public:
     **/
 	void saveLogger(string fileName = NULL, string filePath = NULL);
 	
+	/**
+	 * @brief Sets _programMode for either calibration, run, etc.
+	 * @param mode Refer to enums for list of modes
+	 **/
+	void setMode(int mode);
+	
 private:
 	////////// PARAMETERS ///////////
 	
@@ -304,7 +317,7 @@ private:
 	vector<double> _loggerCsv; // Writes elapsed tracking computation times 
 	
 	//Other important data
-	int _testMode;
+	int _programMode;
 	
 	/////////// FUNCTIONS /////////////
 	

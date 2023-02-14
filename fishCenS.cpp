@@ -10,6 +10,7 @@
 
 #include "lccv.hpp"
 #include "fishTracker.h"
+#include "videoRecord.h"
 
 using namespace std;
 using namespace cv;

@@ -29,7 +29,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	Mat frameRaw, frameProcessed, frameMask;
 	frameRaw = Mat::zeros(_frameSize, CV_8UC3);
 	
-	//First, get mask of image
+	//First, get mask of image...
 	_pBackSub->apply(im, frameMask);
 
 	//Copy only parts of the image that moved

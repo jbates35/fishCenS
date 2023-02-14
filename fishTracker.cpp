@@ -10,7 +10,7 @@ FishTracker::~FishTracker()
 }
 
 
-bool FishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, vector<Rect>& ROIRects)
+bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock, int& fishCount, vector<Rect>& ROIRects)
 {
 	//Make automatic mutex control
 	lock_guard<mutex> guard(lock);
@@ -22,6 +22,9 @@ bool FishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, ve
 		return false;
 	}
 	
+	//Clear mats that will be returned
+	returnMats.clear();
+
 	//Make new Mat so it can be used without needing mutex
 	Mat frameRaw, frameProcessed, frameMask;
 	frameRaw = Mat::zeros(_frameSize, CV_8UC3);
@@ -31,6 +34,23 @@ bool FishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, ve
 
 	//Copy only parts of the image that moved
 	im.copyTo(frameRaw, frameMask);
+	
+	//Returns Mats if need be
+	if (_programMode == CALIBRATION)
+	{	
+		//Make struct for storing in returnMats
+		returnMatsStruct tempMatStruct;
+		
+		//Mask mat
+		tempMatStruct.title = "MASK";
+		frameMask.copyTo(tempMatStruct.mat);
+		returnMats.push_back(tempMatStruct);
+		
+		//BG-Removed mat
+		tempMatStruct.title = "BG REMOVED";
+		frameRaw.copyTo(tempMatStruct.mat);
+		returnMats.push_back(tempMatStruct);		
+	}
 
 	//Get time for measuring elapsed tracking time
 	_timer = _millis();
@@ -51,7 +71,7 @@ bool FishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, ve
 				_fishTracker.erase(_fishTracker.begin() + j);
 			}
 		}
-			
+		
 		//Move onto next iteration if cannot be detected anymore
 		if (!_fishTracker[i].isTracked)
 		{
@@ -248,8 +268,17 @@ bool FishTracker::run(Mat& im, Mat& imProcessed, mutex& lock, int& fishCount, ve
 		}				
 	}
 		
-	//Delete this if we're not interested in having the processed frame in the main script
-	frameRaw.copyTo(imProcessed);
+	//Returns Mats if need be
+	if (_programMode == CALIBRATION)
+	{	
+		//Make struct for storing in returnMats
+		returnMatsStruct tempMatStruct;
+		
+		//Processed binary image
+		tempMatStruct.title = "PROCESSED";
+		frameProcessed.copyTo(tempMatStruct.mat);
+		returnMats.push_back(tempMatStruct);		
+	}	
 	
 	//Copy rects from fishTracker vector to parent class
 	ROIRects.clear();
@@ -314,15 +343,9 @@ bool FishTracker::init(unsigned int video_width, unsigned int video_height, Scal
 	_loggerFilepath = DEFAULT_FILE_PATH;
 	
 	//Test mode to display possible helpful debugging parameters
-	_testMode = OFF;
+	_programMode = NORMAL;
 	
 	return true;
-}
-
-//Sets testMode for displaying important parameters 
-void FishTracker::setTestMode(int testMode)
-{
-	_testMode = testMode;
 }
 
 //Setter for erode size
@@ -610,4 +633,10 @@ vector<Rect> FishTracker::_getRects()
 	}
 	
 	return tempRects;
+}
+
+//Sets the program mode, i.e. calibration, normal, testing, etc.
+void FishTracker::setMode(int mode)
+{
+	_programMode = mode;
 }

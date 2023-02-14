@@ -63,8 +63,11 @@ int main(int argc, char *argv[])
 	//Parameters for tracking fish, ROIs, and fish counter
 	FishTracker fishTrackerObj;
 	vector<Rect> ROIRects;	
-	int fishCount=0;
+	int fishCount = 0;
 
+	//Vector of mats that is returned from tracker
+	vector<returnMatsStruct> returnMats;
+	
 	//Mutex for running tracker
 	std::mutex fishLock;
 
@@ -84,25 +87,36 @@ int main(int argc, char *argv[])
 
 	fishTrackerObj.init(VIDEO_WIDTH, VIDEO_HEIGHT);
 	fishTrackerObj.setRange(Scalar(BALL_H_MIN, BALL_S_MIN, BALL_V_MIN), Scalar(BALL_H_MAX, BALL_S_MAX, BALL_V_MAX));
-
+	fishTrackerObj.setMode(CALIBRATION);
+	
 	//Video playback
 	char escKey = '\0';	
 	while (escKey != 27)
 	{		
 		//Load video frame, if timeout, restart while loop
-		if(!cam.getVideoFrame(frameRaw,1000))
+		if (!cam.getVideoFrame(frameRaw, 1000))
 		{
-            cout << "Timeout error\n";
+			cout << "Timeout error\n";
 			continue; // Restart while loop
-        }
+		}
 
 		//Remove bg, run tracker, do image processing
-		thread trackingThread(&FishTracker::run, fishTrackerObj, ref(frameRaw), ref(frameProc), ref(fishLock), ref(fishCount), ref(ROIRects));
+		std::thread trackingThread(&FishTracker::run, fishTrackerObj, ref(frameRaw), ref(returnMats), ref(fishLock), ref(fishCount), ref(ROIRects));
 		trackingThread.join();
 
+		//Display all mats being returned
+		if (!returnMats.empty())
+		{
+			for (auto matStruct : returnMats)
+			{
+				imshow(matStruct.title, matStruct.mat);
+			}
+		}
+		
 		//Display video
-		if(!frameRaw.empty())
-		{		//Display rects
+		if (!frameRaw.empty())
+		{
+			//Display rects
 			for (auto roi : ROIRects)
 			{
 				rectangle(frameRaw, roi, Scalar(255, 0, 255), 2);
@@ -113,7 +127,6 @@ int main(int argc, char *argv[])
 			putText(frameRaw, fishDisplayStr, Point(40, 40), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 2);
 			
 			imshow("Video", frameRaw);
-			imshow("Processed", frameProc);		
 
 			escKey = waitKey(1);
 		}

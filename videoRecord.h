@@ -52,7 +52,7 @@ public:
 	 * @param fps FPS that video will be set to
 	 * @param filePath If set, folder path that video 
 	 **/
-	void init(Mat& frame, mutex& lock, double fps, string filePath = NULL);
+	void init(Mat& frame, mutex& lock, double fps, string filePath = "");
 
 	/**
 	 * @brief Getter for videoWriter's isOpen

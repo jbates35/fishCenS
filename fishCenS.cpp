@@ -80,7 +80,7 @@ void option2();
 void option3();
 
 int videoRecordState;
-void videoRecord(Mat& frame, double fps, mutex& lock);
+void videoRecord();
 
 int main(int argc, char *argv[])
 {	
@@ -108,17 +108,17 @@ int main(int argc, char *argv[])
 		//Get user input:
 		menuKey = getchar();
 		
-		switch(int(menuKey)-48)
+		switch(menuKey)
 		{
-			case 1:
+			case '1':
 				//Normal run
 				option1();
 				break;
-			case 2:
+			case '2':
 				//Video record
 				option2();
 				break;
-			case 3:
+			case '3':
 				//Calibration
 				option3();
 				break;
@@ -127,48 +127,6 @@ int main(int argc, char *argv[])
 				break;
 		}
 	}
-	//Video playback
-	char escKey = '\0';	
-	while (escKey != 27)
-	{		
-		//Load video frame, if timeout, restart while loop
-		if (!cam.getVideoFrame(frameRaw, 1000))
-		{
-			cout << "Timeout error\n";
-			continue; // Restart while loop
-		}
-
-		//Remove bg, run tracker, do image processing
-		std::thread trackingThread(&FishTracker::run, fishTrackerObj, ref(frameRaw), ref(returnMats), ref(fishLock), ref(fishCount), ref(ROIRects));
-		trackingThread.join();
-
-		//Display all mats being returned
-		if (!returnMats.empty())
-		{
-			for (auto matStruct : returnMats)
-			{
-				imshow(matStruct.title, matStruct.mat);
-			}
-		}
-		
-		//Display video
-		if (!frameRaw.empty())
-		{
-			//Display rects
-			for (auto roi : ROIRects)
-			{
-				rectangle(frameRaw, roi, Scalar(255, 0, 255), 2);
-			}
-
-			//Display information
-			string fishDisplayStr = "Current fish: " + to_string(fishCount);
-			putText(frameRaw, fishDisplayStr, Point(40, 40), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 2);
-			
-			imshow("Video", frameRaw);
-
-			escKey = waitKey(1);
-		}
-	}	
 	
 	//End session with opencv
 	cam.stopVideo();
@@ -245,16 +203,40 @@ void option2()
 		//Start video
 		if(escKey == 'r' && videoRecordState == VIDEO_OFF) 
 		{
-			videoRecordState = VIDEO_SETUP;
+			escKey = '\0';
 			
-			std::thread videoThread(videoRecord, ref(frameRaw), ref(fps), ref(fishLock));
-			videoThread.detach();
-		}
+			videoRecordState = VIDEO_SETUP;
+	
+			VideoRecord video;
+			video.init(frameRaw, fishLock, fps, "/home/dev/Public/testData/");		
+			
+			double videoStartTime = getTickCount() - getTickFrequency();
+	
+			while (videoRecordState != VIDEO_OFF)
+			{	
+				//Load video frame, if timeout, restart while loop
+				if (!cam.getVideoFrame(frameRaw, 1000))
+				{
+					cout << "Timeout error\n";
+					continue; // Restart while loop
+				}
+				
+				if ((getTickCount() / getTickFrequency() - videoStartTime) > (1 / fps))
+				{
+					videoStartTime = getTickCount() - getTickFrequency();
+					video.run(frameRaw, fishLock);
+				} 
+			
+				if (escKey == 's')
+				{
+					escKey = '\0';
+						
+					videoRecordState = VIDEO_OFF;				
+				}
 
-		//Stop video
-		if(escKey == 's')
-		{
-			videoRecordState = VIDEO_OFF;
+				imshow("Video", frameRaw);
+				escKey = waitKey(1);	
+			}			
 		}
 	}
 }
@@ -264,10 +246,12 @@ void option3()
 
 }
 
-void videoRecord(Mat& frame, double fps, mutex& lock)
+void videoRecord()
 {
+	double fps = 30.0;
+	
 	VideoRecord video;
-	video.init(frameRaw, lock, fps);
+	video.init(frameRaw, fishLock, fps);
 
 	double videoStartTime = getTickCount()-getTickFrequency();
 	
@@ -275,7 +259,7 @@ void videoRecord(Mat& frame, double fps, mutex& lock)
 	{	
 		if((getTickCount()/getTickFrequency()-videoStartTime)>(1/fps))
 		{
-			video.run(frameRaw, lock);
+			video.run(frameRaw, fishLock);
 		} 		
 	}
 }

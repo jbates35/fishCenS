@@ -6,6 +6,22 @@ VideoRecord::VideoRecord()
 
 VideoRecord::~VideoRecord()
 { 
+	//Save video file to file
+	_video.release();
+
+	cout << "Video closed\n";
+	_log("Closing video");
+	_log("Video length: " + to_string(getTickCount() / getTickFrequency() - _startTime) + "\n");
+	
+	//Make text file and dump data
+	ofstream dataFile(_filePath + _fileName + ".txt");
+	
+	for (auto str : _loggerVec)
+	{
+		dataFile << str;
+	}
+
+	dataFile.close();
 }
 
 void VideoRecord::run(Mat& frame, mutex& lock)
@@ -42,7 +58,7 @@ void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* =
 	lock_guard<mutex> guard(lock);
 	
 	//Setup filepath and filenames, first
-	if (filePath.compare(NULL))
+	if (filePath == "")
 	{
 		_filePath = "./";
 	}

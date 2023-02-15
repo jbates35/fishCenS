@@ -22,8 +22,8 @@ using namespace lccv;
 #define CVUI_IMPLEMENTATION
 #include "cvui.h"
 
-#define VIDEO_WIDTH 768/1.8
-#define VIDEO_HEIGHT 432/1.8
+#define VIDEO_WIDTH 768
+#define VIDEO_HEIGHT 432
 
 //CHANGE THESE
 #define FOLDER_PATH "/home/dev/testvid/" // Folder path for your Pi
@@ -202,15 +202,13 @@ void option2()
 
 		//Start video
 		if(escKey == 'r' && videoRecordState == VIDEO_OFF) 
-		{
-			escKey = '\0';
-			
+		{			
 			videoRecordState = VIDEO_SETUP;
 	
 			VideoRecord video;
 			video.init(frameRaw, fishLock, fps, "/home/dev/Public/testData/");		
 			
-			double videoStartTime = getTickCount() - getTickFrequency();
+			double videoStartTime = getTickCount()/getTickFrequency();
 	
 			while (videoRecordState != VIDEO_OFF)
 			{	
@@ -221,16 +219,14 @@ void option2()
 					continue; // Restart while loop
 				}
 				
-				if ((getTickCount() / getTickFrequency() - videoStartTime) > (1 / fps))
+				if ((getTickCount() / getTickFrequency() - videoStartTime) > period)
 				{
-					videoStartTime = getTickCount() - getTickFrequency();
+					videoStartTime = getTickCount()/getTickFrequency();
 					video.run(frameRaw, fishLock);
 				} 
 			
 				if (escKey == 's')
-				{
-					escKey = '\0';
-						
+				{						
 					videoRecordState = VIDEO_OFF;				
 				}
 

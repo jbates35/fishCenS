@@ -10,8 +10,8 @@ VideoRecord::~VideoRecord()
 	_video.release();
 
 	cout << "Video closed\n";
-	_log("Closing video");
-	_log("Video length: " + to_string(getTickCount() / getTickFrequency() - _startTime) + "\n");
+	_log("Closing video...");
+	_log("Video length: " + to_string(getTickCount() / getTickFrequency() - _startTime) + "s");
 	
 	//Get mean of frame times
 	if (_frameCount > 1)
@@ -101,9 +101,10 @@ void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* =
 	bool isColor = (frame.type() == CV_8UC3);
 	Size videoSize = frame.size();
 
-	_log("Starting video.");
-	_log("Frame rate is " + to_string(fps) + "fps,\t meaning period is " + to_string((double) 1000 / fps) + "ms");
-	_log("Video size is <" + to_string(videoSize.width) + ", " + to_string(videoSize.height));
+	_log("Starting video...");
+	_log("Theoretical frame rate is " + to_string(fps) + "fps");
+	_log("Theoretical frame length is " + to_string((double) 1000 / fps) + "ms");
+	_log("Camera size is <" + to_string(videoSize.width) + ", " + to_string(videoSize.height) + "> px");
 	
 	cout << "Starting video\n";
 	cout << "FPS is " + to_string(fps) + "\nFrame length is " + to_string((double) 1000 / fps)+ "ms\n";

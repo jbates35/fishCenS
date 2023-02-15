@@ -9,6 +9,8 @@
 #include <memory>
 #include <cstdio>
 
+#include <pigpio.h>
+
 #include "lccv.hpp"
 #include "fishTracker.h"
 #include "videoRecord.h"
@@ -37,13 +39,16 @@ using namespace lccv;
 #define BALL_V_MIN 145
 #define BALL_V_MAX 255
 
+//For turning big LED on baby
+#define LED_PIN 21
+
 //Contours min and maxes
 #define BALL_MIN_AREA 1500
 
 //Amount of width/height/x/y (i.e. the margin on the roi) that's added to re-track the ball
-#define RETRACK_REGION 100 
+#define RETRACK_REGION 100
 
-//Another method - try to scale the ROI, need center point tho 
+//Another method - try to scale the ROI, need center point tho
 #define RECT_SCALE 0.8
 
 //Max amount of frames a ball can be lost before discarding vector
@@ -59,7 +64,7 @@ using namespace lccv;
 
 //Parameters for tracking fish, ROIs, and fish counter
 FishTracker fishTrackerObj;
-vector<Rect> ROIRects;	
+vector<Rect> ROIRects;
 int fishCount = 0;
 
 //Vector of mats that is returned from tracker
@@ -83,7 +88,19 @@ int videoRecordState;
 void videoRecord();
 
 int main(int argc, char *argv[])
-{	
+{
+
+    //initiate pigpio
+    if (gpioInitialise() < 0)
+    {
+        cout << "Cannot find pigpio, exiting...\n";
+        return -1;
+    }
+
+    //Turn LED ON
+	gpioWrite(LED_PIN, 1);
+
+    //initiate camera
 	cam.options->video_width = VIDEO_WIDTH;
 	cam.options->video_height = VIDEO_HEIGHT;
 	cam.options->verbose = 1;
@@ -94,7 +111,7 @@ int main(int argc, char *argv[])
 	fishTrackerObj.init(VIDEO_WIDTH, VIDEO_HEIGHT);
 	fishTrackerObj.setRange(Scalar(BALL_H_MIN, BALL_S_MIN, BALL_V_MIN), Scalar(BALL_H_MAX, BALL_S_MAX, BALL_V_MAX));
 	fishTrackerObj.setMode(CALIBRATION);
-	
+
 	char menuKey = '\0';
 
 	while(menuKey != '0')
@@ -103,11 +120,11 @@ int main(int argc, char *argv[])
 		cout << "(1) Normal run\n";
 		cout << "(2) Video Record\n";
 		cout << "(3) Calibration\n";
-		cout << "(0) Quit\n";	
-		
+		cout << "(0) Quit\n";
+
 		//Get user input:
 		menuKey = getchar();
-		
+
 		switch(menuKey)
 		{
 			case '1':
@@ -127,18 +144,19 @@ int main(int argc, char *argv[])
 				break;
 		}
 	}
-	
+
 	//End session with opencv
 	cam.stopVideo();
-	destroyAllWindows();	
+	destroyAllWindows();
+	gpioWrite(LED_PIN, 0);
 }
 
 void option1()
 {
 	//Video playback
-	char escKey = '\0';	
+	char escKey = '\0';
 	while (escKey != 27)
-	{		
+	{
 		//Load video frame, if timeout, restart while loop
 		if (!cam.getVideoFrame(frameRaw, 1000))
 		{
@@ -158,7 +176,7 @@ void option1()
 				imshow(matStruct.title, matStruct.mat);
 			}
 		}
-		
+
 		//Display video
 		if (!frameRaw.empty())
 		{
@@ -171,52 +189,54 @@ void option1()
 			//Display information
 			string fishDisplayStr = "Current fish: " + to_string(fishCount);
 			putText(frameRaw, fishDisplayStr, Point(40, 40), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255), 2);
-			
+
 			imshow("Video", frameRaw);
 
 			escKey = waitKey(1);
 		}
-	}	
+	}
 }
 
 void option2()
 {
+
+
 	//Video playback
-	char escKey = '\0';	
-	
+	char escKey = '\0';
+
 	//Some video parameters
 	double fps = 30.0;
 	double period = 1/fps;
 
 	while (escKey != 27)
-	{						
+	{
 		fishLock.lock();
-		
+
 		//Load video frame, if timeout, restart while loop
 		if (!cam.getVideoFrame(frameRaw, 1000))
 		{
 			cout << "Timeout error\n";
 			continue; // Restart while loop
 		}
-		
+
 		fishLock.unlock();
-		
+
 		imshow("Video", frameRaw);
 		escKey = waitKey(1);
 
 		//Start video
-		if(escKey == 'r' && videoRecordState == VIDEO_OFF) 
-		{			
+		if(escKey == 'r' && videoRecordState == VIDEO_OFF)
+		{
 			videoRecordState = VIDEO_SETUP;
-			
+
 			//Make video thread
 			thread videoThread(videoRecord);
-			videoThread.detach();			
+			videoThread.detach();
 		}
-		
+
 		if (escKey == 's')
-		{						
-			videoRecordState = VIDEO_OFF;				
+		{
+			videoRecordState = VIDEO_OFF;
 		}
 	}
 }
@@ -229,18 +249,17 @@ void option3()
 void videoRecord()
 {
 	double vidFPS = 30.0;
-	
-	VideoRecord video;
-	video.init(frameRaw, fishLock, vidFPS, "/home/dev/Public/testData/");
 
+	VideoRecord video;
+	video.init(frameRaw, fishLock, vidFPS, "./videoFootageFeb15/");
 	double videoStartTime = getTickCount()/getTickFrequency();
-	
+
 	while(videoRecordState != VIDEO_OFF)
-	{	
+	{
 		if ((getTickCount() / getTickFrequency() - videoStartTime) > (1 / vidFPS))
 		{
 			videoStartTime = getTickCount() / getTickFrequency();
 			video.run(frameRaw, fishLock);
-		} 		
+		}
 	}
 }

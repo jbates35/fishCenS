@@ -46,8 +46,8 @@ VideoRecord::~VideoRecord()
 
 void VideoRecord::run(Mat& frame, mutex& lock)
 {
-	//Mutex and record frame
-	lock_guard<mutex> guard(lock);
+		
+	lock_guard<mutex> guard(lock);	
 	
 	//Exit function if video isn't open
 	if (!_video.isOpened())
@@ -57,8 +57,11 @@ void VideoRecord::run(Mat& frame, mutex& lock)
 		return;
 	}
 	
-	_video.write(frame);	
-	
+	//Mutex and record frame	
+	Mat writeFrame;
+	frame.copyTo(writeFrame);	
+	_video.write(writeFrame);	
+		
 	//Update timer information
 	if (_frameTimes.size() > MAX_DATA_SIZE)
 	{

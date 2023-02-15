@@ -189,14 +189,18 @@ void option2()
 	double period = 1/fps;
 
 	while (escKey != 27)
-	{		
+	{						
+		fishLock.lock();
+		
 		//Load video frame, if timeout, restart while loop
 		if (!cam.getVideoFrame(frameRaw, 1000))
 		{
 			cout << "Timeout error\n";
 			continue; // Restart while loop
 		}
-
+		
+		fishLock.unlock();
+		
 		imshow("Video", frameRaw);
 		escKey = waitKey(1);
 
@@ -204,35 +208,15 @@ void option2()
 		if(escKey == 'r' && videoRecordState == VIDEO_OFF) 
 		{			
 			videoRecordState = VIDEO_SETUP;
-	
-			VideoRecord video;
-			video.init(frameRaw, fishLock, fps, "/home/dev/Public/testData/");		
 			
-			double videoStartTime = getTickCount()/getTickFrequency();
-	
-			while (videoRecordState != VIDEO_OFF)
-			{	
-				//Load video frame, if timeout, restart while loop
-				if (!cam.getVideoFrame(frameRaw, 1000))
-				{
-					cout << "Timeout error\n";
-					continue; // Restart while loop
-				}
-				
-				if ((getTickCount() / getTickFrequency() - videoStartTime) > period)
-				{
-					videoStartTime = getTickCount()/getTickFrequency();
-					video.run(frameRaw, fishLock);
-				} 
-			
-				if (escKey == 's')
-				{						
-					videoRecordState = VIDEO_OFF;				
-				}
-
-				imshow("Video", frameRaw);
-				escKey = waitKey(1);	
-			}			
+			//Make video thread
+			thread videoThread(videoRecord);
+			videoThread.detach();			
+		}
+		
+		if (escKey == 's')
+		{						
+			videoRecordState = VIDEO_OFF;				
 		}
 	}
 }
@@ -244,17 +228,18 @@ void option3()
 
 void videoRecord()
 {
-	double fps = 30.0;
+	double vidFPS = 30.0;
 	
 	VideoRecord video;
-	video.init(frameRaw, fishLock, fps);
+	video.init(frameRaw, fishLock, vidFPS, "/home/dev/Public/testData/");
 
-	double videoStartTime = getTickCount()-getTickFrequency();
+	double videoStartTime = getTickCount()/getTickFrequency();
 	
 	while(videoRecordState != VIDEO_OFF)
 	{	
-		if((getTickCount()/getTickFrequency()-videoStartTime)>(1/fps))
+		if ((getTickCount() / getTickFrequency() - videoStartTime) > (1 / vidFPS))
 		{
+			videoStartTime = getTickCount() / getTickFrequency();
 			video.run(frameRaw, fishLock);
 		} 		
 	}

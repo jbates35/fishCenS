@@ -96,6 +96,8 @@ Save the file and reboot, you can check the connections with:
 ```
 ls -l /dev
 ```
-this should show 
+this should show
+
 serial0 -> tty0AMA
+
 serial1 -> ttyS0

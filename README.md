@@ -56,11 +56,10 @@ In the cmake file, whenever you add a new file, you want to add it here:
 If you prefer working in codeblocks, refer to this stackoverflow page on how to do so:
 https://stackoverflow.com/questions/37618040/how-to-create-a-codeblocks-project-from-the-cmake-file
 
--Temperature Sensor Connections
+TEMPERATURE SENSOR.
 On Raspberry Pi go Preferances -> Raspberry Pi Configuration -> Interfaces 
 and toggle on 1-Wire
 
--Pin Connections
 Connect the sensors's -V wire to a ground pin and the +V to the 3.3V supply
 on the Pi.
 By default Pi's 1-wire pin is pin #4 or pin #7 if you're using the physical 
@@ -73,9 +72,11 @@ connected sensor by using commands to navigate to /sys/bus/w1/devices and
 using the ls command. The sensor will appear as 28-0xxxxxxxxxxx. Replace
 this number with the written in the code.
 
--Ultrasonic Sensor Connections
+ULTRASONIC.
 On the Pi go to Preferences -> Raspberry Pi Configurations -> Interfaces
 and toggle on Serial Port.
+
+The snesor needs a 5V supply, ground and connect the sensor output to GPIO 15 (physical pin 10).
 
 The default serial pin uses a miniUart module which can be unstable
 when the pi is under heavy load, so we will change the pin to connect to

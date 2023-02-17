@@ -57,6 +57,7 @@ If you prefer working in codeblocks, refer to this stackoverflow page on how to 
 https://stackoverflow.com/questions/37618040/how-to-create-a-codeblocks-project-from-the-cmake-file
 
 TEMPERATURE SENSOR.
+
 On Raspberry Pi go Preferances -> Raspberry Pi Configuration -> Interfaces 
 and toggle on 1-Wire
 
@@ -73,6 +74,7 @@ using the ls command. The sensor will appear as 28-0xxxxxxxxxxx. Replace
 this number with the written in the code.
 
 ULTRASONIC.
+
 On the Pi go to Preferences -> Raspberry Pi Configurations -> Interfaces
 and toggle on Serial Port.
 

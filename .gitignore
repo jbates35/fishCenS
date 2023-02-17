@@ -41,3 +41,5 @@ obj/
 *.app
 
 .vscode/
+
+CMakeLists.txt.old

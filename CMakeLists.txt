@@ -12,7 +12,7 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 
 set(LIBRARIES_FROM_REFERENCES "")
 
-add_executable(fishCenS fishCenS.cpp fishTracker.cpp fishTracker.h cvui.h lccv.cpp lccv.hpp libcamera_app.cpp libcamera_app.h libcamera_app_options.cpp libcamera_app_options.h)
+add_executable(fishCenS fishCenS.cpp fishTracker.cpp fishTracker.h cvui.h lccv.cpp lccv.hpp libcamera_app.cpp libcamera_app.h libcamera_app_options.cpp libcamera_app_options.h videoRecord.cpp videoRecord.h led.cpp led.h)
 
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
     if (NOT CMAKE_BUILD_TYPE)

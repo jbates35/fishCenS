@@ -11,15 +11,15 @@ class Depth {
 
     private:
 
-        string DateTimeStr;
-        string filename;
-        fstream Distdata;
-        void GetTime();
+        string DateTimeStr;     //Value set by GetTime method can be used by other methods
+        string filename;        //File created by constructor will be written to by getDepth
+        fstream Distdata;       //fstream object to write to log file
+        void GetTime();         //Sets DateTimeStr to current time
 
     public:
 
-        Depth();
-        void getDepth();
+        Depth();                //Constructor creates log file
+        void getDepth();        //Gets sensor data and writes to file created by constructor
 };
 
 #endif // DEPTH_H

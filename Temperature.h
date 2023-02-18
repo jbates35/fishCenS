@@ -10,15 +10,16 @@ class Temperature {
 
     private:
 
-        string filename;
-        string DateTimeStr;
-        fstream Tempdata;
-        void GetTime();
+        string filename;        //Stores file name of log file
+        string DateTimeStr;     //Holds time and date of the last time GetTime method was called
+        fstream Tempdata;       //fstream object to open log file
+        void GetTime();         //Sets DateTimeStr to current date and time
 
     public:
 
-        Temperature();
-        void GetTemperature();
+        Temperature();          //Constructor creates log file
+        void GetTemperature();  //Gets current temp value and time and records it to log file
 };
 
 #endif // TEMPERATURE_H
+

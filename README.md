@@ -55,3 +55,49 @@ In the cmake file, whenever you add a new file, you want to add it here:
 
 If you prefer working in codeblocks, refer to this stackoverflow page on how to do so:
 https://stackoverflow.com/questions/37618040/how-to-create-a-codeblocks-project-from-the-cmake-file
+
+TEMPERATURE SENSOR.
+
+On Raspberry Pi go Preferances -> Raspberry Pi Configuration -> Interfaces 
+and toggle on 1-Wire
+
+Connect the sensors's -V wire to a ground pin and the +V to the 3.3V supply
+on the Pi.
+By default Pi's 1-wire pin is pin #4 or pin #7 if you're using the physical 
+numbering.
+You also need to connect the 1-wire pin to the 3.3V supply with a 4.7 kohm resistor
+
+The code has the address of this temperature sensor hardcoded, but if you
+need to add a temp sensor or use a different one you can get the name of the
+connected sensor by using commands to navigate to /sys/bus/w1/devices and 
+using the ls command. The sensor will appear as 28-0xxxxxxxxxxx. Replace
+this number with the written in the code.
+
+ULTRASONIC.
+
+On the Pi go to Preferences -> Raspberry Pi Configurations -> Interfaces
+and toggle on Serial Port.
+
+The snesor needs a 5V supply, ground and connect the sensor output to GPIO 15 (physical pin 10).
+
+The default serial pin uses a miniUart module which can be unstable
+when the pi is under heavy load, so we will change the pin to connect to
+the PL011 serial modual which is typically used for Bluetooth.
+
+Edit the Pi's Config file with:
+```
+sudo nano /boot/config.txt
+```
+And add the following line to the end of the file:
+```
+dtoverlay = pi3-miniuart-bt
+```
+Save the file and reboot, you can check the connections with:
+```
+ls -l /dev
+```
+this should show
+
+serial0 -> tty0AMA
+
+serial1 -> ttyS0

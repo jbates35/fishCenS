@@ -41,7 +41,7 @@ void Depth::getDepth() {
         if(bytesRead < 0) {
             cerr << "\nError reading data";
         }
-    k
+    
         distance[i] = (data[1] * 256) + data[2];
 
         if(i >= 1) {

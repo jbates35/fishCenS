@@ -59,7 +59,6 @@ int main(int argc, char *argv[])
 			case '5':								
 				fc.init(fcMode::VIDEO_RECORDER);
 				break;
-				
 								
 			default:
 				//Loop or quit
@@ -69,6 +68,8 @@ int main(int argc, char *argv[])
 			fc.run();
 		}
 	}
+	
+	return 0;
 }
 
 

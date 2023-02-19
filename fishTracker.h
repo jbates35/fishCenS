@@ -14,25 +14,6 @@
 using namespace cv;
 using namespace std;
 
-enum
-{
-	RANGE_MIN,
-	RANGE_MAX
-};
-
-enum
-{
-	OFF,
-	ON		
-};
-
-enum 
-{        
-	NORMAL,
-	CALIBRATION,
-	TESTING
-};
-
 //Default params for eroding the image to separate balls
 #define DEFAULT_ERODE_SIZE Size(2,2)
 #define DEFAULT_ERODE_AMOUNT 3
@@ -68,23 +49,46 @@ enum
 //Maximum amount of time object can be tracked before it's dropped from the tracker
 #define MAX_TRACKER_DURATION 30 //(seconds)
 
-//Struct keeping track of parameters of fish
-struct FishTrackerStruct
+enum
 {
-	Ptr<Tracker> tracker;
-	vector<int> posX;
-	bool isTracked;
-	Rect roi;
-	int lostFrameCount;
-    double startTime;
+	RANGE_MIN,
+	RANGE_MAX
 };
 
-//Struct for passing additional mats
-struct returnMatsStruct
+enum
 {
-	string title;
-	Mat mat;
+	OFF,
+	ON		
 };
+
+enum class ftMode
+{        
+	TRACKING,
+	CALIBRATION
+};
+
+namespace _ft
+{		
+	//Struct keeping track of parameters of fish
+	struct FishTrackerStruct
+	{
+		Ptr<Tracker> tracker;
+		vector<int> posX;
+		bool isTracked;
+		Rect roi;
+		int lostFrameCount;
+		double startTime;
+	};
+
+	//Struct for passing additional mats
+	struct returnMatsStruct
+	{
+		string title;
+		Mat mat;
+	};
+}
+
+using namespace _ft;
 
 /**
  * @brief Fish Tracking class for Fish-CenS
@@ -279,7 +283,7 @@ public:
 	 * @brief Sets _programMode for either calibration, run, etc.
 	 * @param mode Refer to enums for list of modes
 	 **/
-	void setMode(int mode);
+	void setMode(ftMode mode);
 	
 private:
 	////////// PARAMETERS ///////////
@@ -317,7 +321,7 @@ private:
 	vector<double> _loggerCsv; // Writes elapsed tracking computation times 
 	
 	//Other important data
-	int _programMode;
+	ftMode _programMode;
 	
 	/////////// FUNCTIONS /////////////
 	

@@ -36,7 +36,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	im.copyTo(frameRaw, frameMask);
 	
 	//Returns Mats if need be
-	if (_programMode == CALIBRATION)
+	if (_programMode == ftMode::CALIBRATION)
 	{	
 		//Make struct for storing in returnMats
 		returnMatsStruct tempMatStruct;
@@ -269,7 +269,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	}
 		
 	//Returns Mats if need be
-	if (_programMode == CALIBRATION)
+	if (_programMode == ftMode::CALIBRATION)
 	{	
 		//Make struct for storing in returnMats
 		returnMatsStruct tempMatStruct;
@@ -343,7 +343,7 @@ bool FishTracker::init(unsigned int video_width, unsigned int video_height, Scal
 	_loggerFilepath = DEFAULT_FILE_PATH;
 	
 	//Test mode to display possible helpful debugging parameters
-	_programMode = NORMAL;
+	_programMode = ftMode::TRACKING;
 	
 	return true;
 }
@@ -636,7 +636,7 @@ vector<Rect> FishTracker::_getRects()
 }
 
 //Sets the program mode, i.e. calibration, normal, testing, etc.
-void FishTracker::setMode(int mode)
+void FishTracker::setMode(ftMode mode)
 {
 	_programMode = mode;
 }

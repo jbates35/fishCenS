@@ -3,6 +3,7 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
+#include <map>
 #include <thread>
 
 #include "lccv.hpp"
@@ -18,8 +19,8 @@ using namespace lccv;
 namespace _fc
 {
 	//Camera width and height
-	const int VIDEO_WIDTH	= 768;
-	const int VIDEO_HEIGHT	= 432;
+	const int VIDEO_WIDTH	= 768; //px
+	const int VIDEO_HEIGHT	= 432; //px
 	
 	//Gpio pins
 	const int LED_PIN	= 21; //Main LED (big flashy flash)
@@ -28,6 +29,14 @@ namespace _fc
 	
 	const string TEST_VIDEO_PATH = "./testVideos/"; // Folder for seeing videos
 	const string TEST_VIDEO_FILE = "blue_fish_daytime_1.avi";
+	
+	const int MAX_LOG_SIZE	= 5000; //Max amount of lines the logger can have before erasing start
+	
+	//For timers (typically in milliseconds)
+	const double DRAW_FPS = 30; //FPS of opencv imshow
+	const double DRAW_PERIOD = 1000 / DRAW_FPS; //Period of opencv imshow in milliseconds
+	
+	
 }
 
 enum class fcMode
@@ -76,6 +85,12 @@ public:
 	/**
 	 *	@brief Shows video frame (might need to be threaded)
 	 *	@return 1 if good, -1 if error
+	 **/		
+	int draw();
+	
+	/**
+	 *	@brief Manages runtime of fishCenS object
+	 *	@return 1 if good, -1 if error
 	 **/	
 	int run();
 	
@@ -102,7 +117,7 @@ private:
 	//Imaging (Camera and mats)
 	PiCamera _cam;
 	Mat _frame;
-	vector<_ft::returnMatsStruct> returnMats; //Mats that are processed from the tracking and inrange algs
+	vector<_ft::returnMatsStruct> _returnMats; //Mats that are processed from the tracking and inrange algs
 	
 	//Video recording
 	vrMode _videoRecordState;
@@ -110,23 +125,32 @@ private:
 	int _videoHeight;
 	
 	//Testing video playback
-	VideoCapture vid;
+	VideoCapture _vid;
+	int _vidFramesTotal; // For looping video over at last frame
+	int _vidNextFramePos;
 	
 	//Mutex for threadlocking
 	mutex _baseLock;
 	
-	//Logger vector
+	//Logger stuff
 	vector<string> _fcLogger;
+	string _logFileName;
+	
+	//Timers
+	map<string, double> _timers;
 	
 	////////////// METHODS //////////////
-	void _tracking(); //takes care of normal tracking, and tracking with video (alpha mode)
-	void _calibrate();
+	void _trackingUpdate(); //takes care of normal tracking, and tracking with video (alpha mode)
+	void _calibrateUpdate();
 	
 	//ALPHA MODES
-	void _videoRecord();
+	void _videoRecordUpdate();
 	
-	void _getTime();
-	double _millis();
-	void _log(string data, bool say = true);
+	//General helper functions
+	static string _getTime(); // Returns time (this is used in a few diff classes, maybe it should be deferred to a separate helper file?)
+	static double _millis(); //Returns ms to be used with getTickCount/getTickFreq
+	void _log(string data, bool outputToScreen = false); //Writes to log vector, outputs to screen if need be
+	int _saveLogFile(); //Ensures data folder exists and saves log file there 
+	bool _directoryExists(const char* pzPath);
 	
 };

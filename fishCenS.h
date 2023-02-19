@@ -36,6 +36,10 @@ namespace _fc
 	const double DRAW_FPS = 30; //FPS of opencv imshow
 	const double DRAW_PERIOD = 1000 / DRAW_FPS; //Period of opencv imshow in milliseconds
 	
+	const int SLEEP_TIMER	= 300; //milliseconds
+
+	//For video listing
+	const int VIDEOS_PER_PAGE = 20; //20 listings per page when showing which videos
 	
 }
 

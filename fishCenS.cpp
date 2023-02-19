@@ -23,6 +23,7 @@ FishCenS::FishCenS()
 
 FishCenS::~FishCenS()
 {
+	_log("Closing stream...");
 	destroyAllWindows();
 	_cam.stopVideo();
 	gpioWrite(LED_PIN, 0);
@@ -60,12 +61,19 @@ int FishCenS::init(fcMode mode)
 		_cam.options->list_cameras = true;
 		_cam.options->framerate = 100;
 		_cam.startVideo();
-			
+		
+		//Allow camera time to figure itself out
+		_log("Attempting to start camera. Sleeping for " + to_string(SLEEP_TIMER) + "ms", true);
+		double camTimer = _millis();
+		while((_millis() - camTimer) < SLEEP_TIMER)
+		{
+			;
+		}
+
 		//Load video frame, if timeout, restart while loop
 		if (!_cam.getVideoFrame(_frame, 1000))
 		{
-			_log("Timeout error, exiting program", true);
-			return -1;
+			_log("Timeout error while initializing", true);
 		}
 			
 		//If there's nothing in the video frame, also exit
@@ -78,6 +86,11 @@ int FishCenS::init(fcMode mode)
 		//Set class video width and height for tracker
 		_videoWidth = _frame.size().width;
 		_videoHeight = _frame.size().height;
+	
+		_log("Camera found. Size of camera is: ", true);
+		_log("\t>> Width: " + to_string(_videoWidth) + "px", true);
+		_log("\t>> Width: " + to_string(_videoHeight) + "px", true);
+		_log("Frame rate of camera is: " + to_string(_cam.options->framerate) + "fps", true);
 	}
 	
 	//Initiate test video file 
@@ -132,6 +145,9 @@ int FishCenS::init(fcMode mode)
 	//Initiate any sensor stuff
 	
 	//Load any saved file parameters
+
+	//initialize frame to all black to start
+	_frame = Mat::zeros(Size(_videoWidth, _videoHeight), CV_8UC3);
 
 	return 1;
 }
@@ -206,10 +222,16 @@ int FishCenS::draw()
 		return -1;
 	}
 	
-	_timers["drawTime"] = _millis();	
-	imshow("Video", _frame);
+	_timers["drawTime"] = _millis();
+	
+	if(!_frame.empty())
+	{
+		imshow("Video", _frame);
+	}
 	_returnKey = waitKey(1);
 	
+	
+	return 1;
 }
 
 
@@ -221,6 +243,9 @@ int FishCenS::run()
 		draw();
 	}
 	
+	//Temporary - save log file
+	_saveLogFile();
+
 	return 1;
 }
 
@@ -243,6 +268,33 @@ void FishCenS::_videoRecordUpdate()
 
 int FishCenS::_enterVideos()
 {
+	//This is the return variable
+	int videoEntered = -1;
+
+	//Get vector of all files
+	vector<string> videoFileNames;
+
+	for (const auto & entry : fs::directory_iterator(TEST_VIDEO_PATH))
+	{
+		videoFileNames.push_back(entry.path());
+	}
+	
+	int vecBegin;
+	int vecEnd;
+	int page = 0;
+
+	while(videoEntered==-1)
+	{
+
+	}
+	
+
+
+	
+
+
+	//Display files n*(1-20) to screen
+
 }
 
 string FishCenS::_getTime()
@@ -310,16 +362,18 @@ double FishCenS::_millis()
 
 void FishCenS::_log(string data, bool outputToScreen /* = false */)
 {
+	string dataStr = _getTime() + ":\t" + data + "\n";
+
 	if (_fcLogger.size() > MAX_LOG_SIZE)
 	{
 		_fcLogger.erase(_fcLogger.begin());
 	}
 	
-	_fcLogger.push_back(_getTime() + data + "\n");
+	_fcLogger.push_back(dataStr);
 	
 	if (outputToScreen == true)
 	{
-		cout << _getTime() + data + "\n";
+		cout << dataStr;
 	}
 }
 

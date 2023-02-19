@@ -19,45 +19,47 @@ int main(int argc, char *argv[])
 
 	while (menuKey != '0')
 	{
-		cout << "Choose options\n";
-		cout << "(1) Tracking";
-		cout << "(2) Calibration\n";
-		cout << "(3) Tracking with video (TESTING)\n";
-		cout << "(4) Calibration with video (TESTING)\n";
-		cout << "(5) Video (TESTING)\n";
-		cout << "(0) Quit\n";
+		cout << "Choose option:\n\n";
+		cout << "\t>> (1) Tracking\n";
+		cout << "\t>> (2) Calibration\n";
+		cout << "\t>> (3) Tracking with video (TESTING)\n";
+		cout << "\t>> (4) Calibration with video (TESTING)\n";
+		cout << "\t>> (5) Video (TESTING)\n";
+		cout << "\t>> (0) Quit\n\n";
+		cout << "Choose key: ";
 
 		//Get user input:
 		menuKey = getchar();
 
 		{
 			FishCenS fc;
-			
+			int initSuccess = false;
+
 			switch (menuKey)
 			{
 			//Tracking
 			case '1':
-				fc.init(fcMode::TRACKING);
+				initSuccess = fc.init(fcMode::TRACKING);
 				break;
 				
 			//Calibration
 			case '2':
-				fc.init(fcMode::CALIBRATION);
+				initSuccess = fc.init(fcMode::CALIBRATION);
 				break;
 				
 			//Tracking with video test
 			case '3':								
-				fc.init(fcMode::TRACKING_WITH_VIDEO);
+				initSuccess = fc.init(fcMode::TRACKING_WITH_VIDEO);
 				break;
 				
 				//Tracking with video test
 			case '4':								
-				fc.init(fcMode::CALIBRATION_WITH_VIDEO);
+				initSuccess = fc.init(fcMode::CALIBRATION_WITH_VIDEO);
 				break;
 				
 				//Tracking with video test
 			case '5':								
-				fc.init(fcMode::VIDEO_RECORDER);
+				initSuccess = fc.init(fcMode::VIDEO_RECORDER);
 				break;
 								
 			default:
@@ -65,7 +67,10 @@ int main(int argc, char *argv[])
 				break;
 			}			
 			
-			fc.run();
+			if(initSuccess>0)
+			{
+				fc.run();
+			}
 		}
 	}
 	

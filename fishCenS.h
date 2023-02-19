@@ -151,6 +151,5 @@ private:
 	static double _millis(); //Returns ms to be used with getTickCount/getTickFreq
 	void _log(string data, bool outputToScreen = false); //Writes to log vector, outputs to screen if need be
 	int _saveLogFile(); //Ensures data folder exists and saves log file there 
-	bool _directoryExists(const char* pzPath);
 	
 };

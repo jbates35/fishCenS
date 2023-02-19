@@ -5,13 +5,16 @@
 #include <ctime>
 #include <cstdio>
 #include <pigpio.h>
+#include <string>
 #include <dirent.h> //Probably don't need this with filesystem
 #include <filesystem>
+
 // Add simple GUI elements
 #define CVUI_DISABLE_COMPILATION_NOTICES
 #define CVUI_IMPLEMENTATION
 #include "cvui.h"
 
+namespace fs = std::filesystem;
 
 FishCenS::FishCenS()
 {
@@ -316,18 +319,20 @@ void FishCenS::_log(string data, bool outputToScreen /* = false */)
 
 int FishCenS::_saveLogFile()
 {
-	string thisLoggerPath = LOGGER_PATH;
+	string loggerPathStr = LOGGER_PATH;
 	
 	//Add slash if folder-path does not end in slash so filename doesn't merge with the folder it's in
-	if (thisLoggerPath[thisLoggerPath.size() - 1] != '/')
+	if (loggerPathStr[loggerPathStr.size() - 1] != '/')
 	{
-		thisLoggerPath += '/';
+		loggerPathStr += '/';
 	}
 	
+	fs::path loggerPath = loggerPathStr;
+	
 	//Check if data folder exists in first place
-	if (!_directoryExists(thisLoggerPath.c_str()))
+	if (!fs::exists(loggerPath))
 	{
-		string file_command = "mkdir -p " + thisLoggerPath;	
+		string file_command = "mkdir -p " + loggerPathStr;	
 	
 		//Create directory for saving logger file in
 		if (system(file_command.c_str()) == -1)
@@ -337,12 +342,12 @@ int FishCenS::_saveLogFile()
 		}
 		
 		//Change permission on all so it can be read immediately by users
-		file_command = "chmod -R 777 ./" + thisLoggerPath;
+		file_command = "chmod -R 777 ./" + loggerPathStr;
 		system(file_command.c_str());
 	}
 	
 	//Now open the file and dump the contents of the logger file into it
-	ofstream outLogFile(thisLoggerPath + _logFileName + ".txt");
+	ofstream outLogFile(loggerPathStr + _logFileName + ".txt");
 	for (auto logLine : _fcLogger)
 	{
 		outLogFile << logLine;
@@ -352,22 +357,4 @@ int FishCenS::_saveLogFile()
 	return 1;
 }
 
-//Source: https://bytes.com/topic/c/answers/584434-check-directory-exists-c
-bool FishCenS::_directoryExists(const char* pzPath)
-{
-	if (pzPath == NULL) return false;
- 
-	DIR *pDir;
-	bool bExists = false;
- 
-	pDir = opendir(pzPath);
- 
-	if (pDir != NULL)
-	{
-		bExists = true;    
-		(void) closedir(pDir);
-	}
- 
-	return bExists;	
-}
 

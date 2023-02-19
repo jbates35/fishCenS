@@ -146,6 +146,9 @@ private:
 	//ALPHA MODES
 	void _videoRecordUpdate();
 	
+	//Helps list files for video playback initializer
+	int _enterVideos();
+	
 	//General helper functions
 	static string _getTime(); // Returns time (this is used in a few diff classes, maybe it should be deferred to a separate helper file?)
 	static double _millis(); //Returns ms to be used with getTickCount/getTickFreq

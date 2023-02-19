@@ -23,7 +23,7 @@ enum vrMode
 	VIDEO_ON
 };
 
-#define MAX_VIDEO_DATA_SIZE 10000 // Max amount of info logger can contain
+#define MAX_DATA_SIZE 10000 // Max amount of info logger can contain
 
 class VideoRecord
 {

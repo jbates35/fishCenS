@@ -86,6 +86,8 @@ int FishCenS::init(fcMode mode)
 		//TODO: 
 		//LIST FILES IN VIDEO DIRECTORY AND THEN
 		//ALLOW USER TO CHOOSE THE FILE THEYD LIKE TO SEE
+		cout << "Select video. Enter \"q\" to go back. Enter \"n\" or \"p\" for more videos.\n\n";
+		
 		
 		_vid.open(TEST_VIDEO_PATH + TEST_VIDEO_FILE, CAP_FFMPEG);
 		
@@ -239,6 +241,10 @@ void FishCenS::_videoRecordUpdate()
 }
 
 
+int FishCenS::_enterVideos()
+{
+}
+
 string FishCenS::_getTime()
 {
 	//Create unique timestamp for folder
@@ -356,5 +362,7 @@ int FishCenS::_saveLogFile()
 	
 	return 1;
 }
+
+
 
 

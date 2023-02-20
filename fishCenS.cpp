@@ -8,6 +8,8 @@
 #include <string>
 #include <dirent.h> //Probably don't need this with filesystem
 #include <filesystem>
+#include <sstream>
+#include <regex>
 
 // Add simple GUI elements
 #define CVUI_DISABLE_COMPILATION_NOTICES
@@ -99,8 +101,7 @@ int FishCenS::init(fcMode mode)
 		//TODO: 
 		//LIST FILES IN VIDEO DIRECTORY AND THEN
 		//ALLOW USER TO CHOOSE THE FILE THEYD LIKE TO SEE
-		cout << "Select video. Enter \"q\" to go back. Enter \"n\" or \"p\" for more videos.\n\n";
-		
+		string selectedVideoFile = _getVideoEntry();
 		
 		_vid.open(TEST_VIDEO_PATH + TEST_VIDEO_FILE, CAP_FFMPEG);
 		
@@ -266,36 +267,91 @@ void FishCenS::_videoRecordUpdate()
 }
 
 
-int FishCenS::_enterVideos()
+string FishCenS::_getVideoEntry()
 {
+	//Prepare video path
+	string testVideoPath = TEST_VIDEO_PATH;
+	if (testVideoPath.at(testVideoPath.size() - 1) == '/')
+	{
+		testVideoPath.pop_back();
+	}
+	
 	//This is the return variable
 	int videoEntered = -1;
+	
+	//Variables for iterating through part of the vidoe file folder.
+	int page = 0;
 
 	//Get vector of all files
 	vector<string> videoFileNames;
-
-	for (const auto & entry : fs::directory_iterator(TEST_VIDEO_PATH))
-	{
+	for (const auto & entry : fs::directory_iterator(TEST_VIDEO_PATH))///fs::directory_iterator(TEST_VIDEO_PATH))
+	{		
 		videoFileNames.push_back(entry.path());
 	}
 	
-	int vecBegin;
-	int vecEnd;
-	int page = 0;
-
-	while(videoEntered==-1)
-	{
-
-	}
+	cout << videoFileNames.size() << " files found: \n";
+	
+	//Shows 
+	_showVideoList(videoFileNames, page);
+	
+	cout << "Select video. Enter \"q\" to go back. Enter \"n\" or \"p\" for more videos.\n";
+	cout << "To select video, enter number associated with file number.\n";
+	cout << "I.e., to select \"File 4:\t \'This video.avi\'\", you would simply enter 4.\n";
+	cout << "File: ";
+	
+	string userInput;
+	cin >> userInput;
+	
+	bool inputIsInteger = false;
+	
+	
+	
+//
+//	while(videoEntered==-1)
+//	{
+//
+//	}
 	
 
-
 	
-
-
 	//Display files n*(1-20) to screen
 
+
+	
+	//Return filename selected
+	return "";
 }
+
+
+void FishCenS::_showVideoList(vector<string> videoFileNames, int page)
+{
+	//Get indexing numbers
+	int vecBegin = page * VIDEOS_PER_PAGE;
+	int vecEnd = (page + 1) * VIDEOS_PER_PAGE;
+	
+	//Make sure we don't list files exceeding array size later
+	if (vecEnd > videoFileNames.size())
+	{
+		vecEnd = videoFileNames.size();
+	}
+	
+	//Iterate and list file names
+	for (int fileIndex = 0; fileIndex < videoFileNames.size(); fileIndex++)
+	{		
+		//This gives us the full path, which is useful later, but we just need the particular file name
+		//Therefore, following code delimits with the slashbars
+		stringstream buffSS(videoFileNames[fileIndex]);
+		string currentFile;
+		
+		while (getline(buffSS, currentFile, '/'))
+		{
+		}	
+		
+		cout << "\t>> File " << fileIndex << ":\t \"" << currentFile << "\"\n";
+	}
+}
+
+
 
 string FishCenS::_getTime()
 {
@@ -416,6 +472,7 @@ int FishCenS::_saveLogFile()
 	
 	return 1;
 }
+
 
 
 

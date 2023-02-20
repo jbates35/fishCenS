@@ -25,9 +25,9 @@ namespace _fc
 	//Gpio pins
 	const int LED_PIN	= 21; //Main LED (big flashy flash)
 	
-	const string LOGGER_PATH = "./logData/"; // Folder path for Logging data
+	const string LOGGER_PATH = "./logData"; // Folder path for Logging data
 	
-	const string TEST_VIDEO_PATH = "./testVideos/"; // Folder for seeing videos
+	const string TEST_VIDEO_PATH = "./testVideos/"; // Folder for seeing videos - NOTE: CANNOT HAVE SLASH AT END
 	const string TEST_VIDEO_FILE = "blue_fish_daytime_1.avi";
 	
 	const int MAX_LOG_SIZE	= 5000; //Max amount of lines the logger can have before erasing start
@@ -151,7 +151,8 @@ private:
 	void _videoRecordUpdate();
 	
 	//Helps list files for video playback initializer
-	int _enterVideos();
+	string _getVideoEntry();
+	void _showVideoList(vector<string> videoFileNames, int page);
 	
 	//General helper functions
 	static string _getTime(); // Returns time (this is used in a few diff classes, maybe it should be deferred to a separate helper file?)

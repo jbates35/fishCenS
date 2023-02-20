@@ -507,6 +507,37 @@ int FishTracker::getFrameCenter()
 	return _frameMiddle;
 }
 
+
+//Sets the program mode, i.e. calibration, normal, testing, etc.
+void FishTracker::setMode(ftMode mode)
+{
+	_programMode = mode;
+}
+
+//Describes whether the tracker is object or not
+bool FishTracker::isTracking()
+{
+	return _fishTracker.size() > 0;
+}
+
+//Returns amount of fishTracker objects being tracked
+int FishTracker::trackerAmount()
+{
+	return _fishTracker.size();
+}
+
+//Setter for filepath
+void FishTracker::setFilepath(string filepath)
+{
+	_loggerFilepath = filepath;
+}
+
+//Setter for filename
+void FishTracker::setFilename(string filename)
+{
+	_loggerFilename = filename;
+}
+
 //Helper that gets the current time in ymd hms and returns a string
 std::string FishTracker::_getTime()
 {
@@ -646,10 +677,4 @@ vector<Rect> FishTracker::_getRects()
 	}
 	
 	return tempRects;
-}
-
-//Sets the program mode, i.e. calibration, normal, testing, etc.
-void FishTracker::setMode(ftMode mode)
-{
-	_programMode = mode;
 }

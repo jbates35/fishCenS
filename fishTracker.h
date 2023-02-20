@@ -88,7 +88,7 @@ namespace _ft
 	{
 		string title;
 		Mat mat;
-		imgMode isHSV;
+		imgMode colorMode;
 	};
 }
 
@@ -289,6 +289,18 @@ public:
 	 **/
 	void setMode(ftMode mode);
 	
+	/**
+	 *	@brief Describes whether the tracker is object or not
+	 *	@return True if tracker is active, false if not.
+	 **/
+	bool isTracking();
+	
+	/**
+	 *	@brief Returns amount of fishTracker objects being tracked
+	 *	@return Size of vector
+	 **/
+	int trackerAmount();
+	
 private:
 	////////// PARAMETERS ///////////
 	
@@ -334,6 +346,5 @@ private:
 	double _millis();
 	void _logger(vector<string>& logger, string data);
 	vector<Rect> _getRects();
-	
 	
 };

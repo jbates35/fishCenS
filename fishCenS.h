@@ -36,6 +36,9 @@ namespace _fc
 	const double DRAW_FPS = 30; //FPS of opencv imshow
 	const double DRAW_PERIOD = 1000 / DRAW_FPS; //Period of opencv imshow in milliseconds
 	
+	const double ULTRASONIC_PERIOD = 2000; //ms
+	const double TEMPERATURE_SENSOR = 2000; //ms
+	
 	const int SLEEP_TIMER	= 300; //milliseconds
 
 	//For video listing
@@ -150,6 +153,9 @@ private:
 	//Timers
 	map<string, double> _timers;
 	
+	//Sensors stuff
+	
+	
 	////////////// METHODS //////////////
 	void _trackingUpdate(); //takes care of normal tracking, and tracking with video (alpha mode)
 	void _calibrateUpdate();
@@ -160,7 +166,7 @@ private:
 	//Helps list files for video playback initializer
 	int _getVideoEntry(string& selectionStr);
 	void _showVideoList(vector<string> videoFileNames, int page);
-	
+		
 	//General helper functions
 	static string _getTime(); // Returns time (this is used in a few diff classes, maybe it should be deferred to a separate helper file?)
 	static double _millis(); //Returns ms to be used with getTickCount/getTickFreq

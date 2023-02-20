@@ -1,51 +1,68 @@
 #include "Depth.h"
 #include <pigpio.h>
-#include <fstream>
-#include <iostream>
 #include <ctime>
 #include <sstream>
 
 using namespace std;
-char serPort[12] = {'/','d','e','v','/','t','t','y','A','M','A','0'};
 
-Depth::Depth() {
-
-    GetTime();
-    filename = DateTimeStr + "_Depth.txt";
-    Distdata.open(filename, ios::out);
-    Distdata << "time, Depth,\n";
-    Distdata.close();
+Depth::Depth() 
+{
 }
 
-void Depth::getDepth() {
+Depth::~Depth()
+{
+	serClose(_uart);
+	gpioTerminate();
+	GetTime();
+	Distdata.open(filename, ios::app);
+	Distdata << DateTimeStr << ", " << _depthResult << ",\n";
+	Distdata.close();
+}
 
-    int distance[2] = {0, 0};
-    char data[4] = {0, 0, 0, 0};
+
+int Depth::init()
+{
+	if (serOpen(SER_PORT, 9600, 0) < 0) {
+		cout << "\nUart Failed";
+		return -1;
+	}
+	
+	GetTime();
+	filename = DateTimeStr + "_Depth.txt";
+	Distdata.open(filename, ios::out);
+	Distdata << "time, Depth,\n";
+	Distdata.close();
+	
+	return 1;
+}
+
+
+int Depth::getDepth(int& depthResult, mutex& lock) 
+{
+    
     int bytesRead;
     int i = 0;
     int attempts = 0;
+	int distance[2] = { 0, 0 };
+	
 
-    gpioInitialise();
-    int Uart = serOpen(serPort, 9600, 0);
-    if(Uart < 0) {
-        cout << "\nUart Failed";
-    }
-    else {
-        cout << "\nUart Good";
-    }
-    while(true) {
-        cout << "\nEnter Loop";
-        while((serDataAvailable(Uart)) <= 3) {}
+    while(attempts<3) {
+	    
+	    cout << "Taking in depth data...\n";
+	    
+	    char data[4] = { 0, 0, 0, 0 };
+	    
+	    while ((serDataAvailable(_uart)) <= 3) {}
 
-        bytesRead = serRead(Uart, data, 4);
+	    bytesRead = serRead(_uart, data, 4);
         if(bytesRead < 0) {
             cerr << "\nError reading data";
         }
     
-        distance[i] = (data[1] * 256) + data[2];
+	    distance[i] = (data[1] * 256) + data[2];
 
         if(i >= 1) {
-            if(abs(distance[0] - distance[1]) < 50) {
+	        if (abs(distance[0] - distance[1]) < 50) {
                 break;
             }
             else {
@@ -54,26 +71,31 @@ void Depth::getDepth() {
                 attempts++;
             }
         }
-
-        if(attempts >= 3) {
-            distance[0] = 9999;
-            cerr << "\nUnstable Data";
-            break;
-        }
+	    
         i++;
     }
-
-    serClose(Uart);
-    gpioTerminate();
-    clog << "\n" << distance[0];
-    GetTime();
-    Distdata.open(filename, ios::app);
-    Distdata << DateTimeStr << ", " << distance[0] << ",\n";
-    Distdata.close();
+	
+	if (attempts == 3) {
+		_depthResult = 9999;
+		cerr << "\nUnstable Data";
+		return -1;
+	}
+	
+	clog << "\n" << distance[0];
+	
+	//Store result from parent class, need lock so no over-writing
+	{
+		std::lock_guard<mutex> guard(lock);
+		
+		//Store member variable and then store it to parent variable
+		_depthResult = distance[0];
+		depthResult = distance[0];	
+	}
+	return 1;
 }
 
-void Depth::GetTime() {
-
+void Depth::GetTime() 
+{
     time_t start = time(nullptr);
     tm *local_time = localtime(&start);
 

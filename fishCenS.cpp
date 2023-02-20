@@ -31,6 +31,31 @@ FishCenS::~FishCenS()
 	gpioWrite(LED_PIN, 0);
 }
 
+/**
+	Overall run of thread
+	Generally:
+	init() is called first in main.cpp,
+	then this method is run continuously.
+	update() takes care of any movement, tracking, sensors, etc
+	draw() collects all the image data and presents it to the screen, including things like labelling, concatenating mats, etc.
+	
+	Later, this may be threaded, particularly draw(). 
+ **/
+
+int FishCenS::run()
+{
+	while (_returnKey != 27)
+	{
+		update();
+		draw();
+	}
+	
+	//Temporary - save log file
+	_saveLogFile();
+
+	return 1;
+}
+
 int FishCenS::init(fcMode mode)
 {	
 	//Mode of fishCenS object
@@ -298,19 +323,6 @@ int FishCenS::draw()
 }
 
 
-int FishCenS::run()
-{
-	while (_returnKey != 27)
-	{
-		update();
-		draw();
-	}
-	
-	//Temporary - save log file
-	_saveLogFile();
-
-	return 1;
-}
 
 
 

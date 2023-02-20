@@ -39,8 +39,11 @@ namespace _fc
 	const int SLEEP_TIMER	= 300; //milliseconds
 
 	//For video listing
-	const int VIDEOS_PER_PAGE = 5; //20 listings per page when showing which videos
+	const int VIDEOS_PER_PAGE = 10; //20 listings per page when showing which videos
 	
+	//For calibration mode
+	const double MAX_WIDTH_PER_FRAME = 640;
+	const double MAX_HEIGHT_PER_FRAME = 360;
 }
 
 enum class fcMode
@@ -117,10 +120,11 @@ private:
 	FishTracker _fishTrackerObj; // Overall tracker
 	vector<Rect> _ROIRects; //Needs opencv4.5+ - rects that show ROIs of tracked objects for putting on screen
 	int _fishCount; 
+	double _scaleFactor; //For calibration mode only
 
 	//Imaging (Camera and mats)
 	PiCamera _cam;
-	Mat _frame;
+	Mat _frame, _frameDraw;
 	vector<_ft::returnMatsStruct> _returnMats; //Mats that are processed from the tracking and inrange algs
 	
 	//Video recording
@@ -135,7 +139,8 @@ private:
 	double _vidFPS;
 	double _vidPeriod;
 	
-	//Mutex for threadlocking
+	//Mutex for threadlocking/threading
+	vector<thread> _threadVector;
 	mutex _baseLock;
 	
 	//Logger stuff

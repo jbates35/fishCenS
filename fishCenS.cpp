@@ -54,6 +54,9 @@ int FishCenS::init(fcMode mode)
 	//Video stuff that needs to be initialized
 	_videoRecordState = vrMode::VIDEO_OFF;
 	
+	//Make sure no threads
+	_threadVector.clear();
+	
 	//initiate camera	
 	if (_mode == fcMode::TRACKING || _mode == fcMode::CALIBRATION || _mode == fcMode::VIDEO_RECORDER)
 	{
@@ -116,8 +119,12 @@ int FishCenS::init(fcMode mode)
 		//Reset frame counter
 		_vid.set(CAP_PROP_POS_FRAMES, 0);
 		
+		//Timer's needed to ensure video is played at proper fps
+		_timers["videoFrameTimer"] = _millis();
+		
 		//Vid FPS so i can draw properly
 		_vidFPS = _vid.get(CAP_PROP_FPS);
+		_vidPeriod = 1000 / _vidFPS;
 		
 		//Set class video width and height for tracker
 		_videoWidth = _frame.size().width;
@@ -133,11 +140,30 @@ int FishCenS::init(fcMode mode)
 		_log("\t>> Frame rate: " + to_string(_vidFPS) + "fps", true);
 	}
 	
+	//If calibration mode, we want the mat to be a certain width/height so we can easily fit four on there
+	double scaleFactorW, scaleFactorH;	
+	scaleFactorW = (double) _videoWidth / MAX_WIDTH_PER_FRAME;
+	scaleFactorH = (double) _videoHeight / MAX_HEIGHT_PER_FRAME;	
+	if (scaleFactorH < 1)
+	{
+		_scaleFactor = min(scaleFactorH, scaleFactorW);
+	}
+	else
+	{
+		_scaleFactor = max(scaleFactorH, scaleFactorW);
+	}	
+	
+	if (_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO)
+	{
+		_videoWidth /= _scaleFactor;
+		_videoHeight /= _scaleFactor;		
+	}
+	
 	//Initiate tracking
 	if (_mode != fcMode::VIDEO_RECORDER)
 	{
 		//Initialize tracker now
-		_fishTrackerObj.init(VIDEO_WIDTH, VIDEO_HEIGHT);
+		_fishTrackerObj.init(_videoWidth, _videoHeight);
 		_ROIRects.clear();
 	}
 	
@@ -170,10 +196,12 @@ int FishCenS::init(fcMode mode)
 int FishCenS::update()
 {
 	
+	//Start sensors thread
+	
+	
 	//	Next two if statements just load _frame with the proper content,
 	//	depending on whether the camera is being read or a test video is
-	//	instead being read.
-	
+	//	instead being read.	
 	//Read camera
 	if (_mode == fcMode::TRACKING || _mode == fcMode::CALIBRATION || _mode == fcMode::VIDEO_RECORDER)
 	{
@@ -186,10 +214,14 @@ int FishCenS::update()
 	}
 	
 	//Read video
-					//NOTE NEED TO PUT IN TIMER THAT ONLY ALLOWS FRAME TO BE SLOT IN EVERY 1/FPS
-	
 	if (_mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
+		if ((_millis() - _timers["videoFrameTimer"]) < _vidPeriod)
+		{
+			return -1;
+		}
+		_timers["videoFrameTimer"] = _millis();
+		
 		//Load frame to do analysis
 		_vid >> _frame;		
 		
@@ -204,27 +236,27 @@ int FishCenS::update()
 		
 	}
 	
-	switch (_mode)
+	//Resize frames if in calibration mode so four images can sit in one easily
+	if (_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
-	case fcMode::TRACKING:
-		_trackingUpdate();
-		break;
+		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
+	}
 	
-	case fcMode::CALIBRATION:
-		_calibrateUpdate();
-		break;
+	//Start tracking thread
+	if (_mode != fcMode::VIDEO_RECORDER)
+	{
+		//Remove bg, run tracker, do image processing
+		std::thread trackingThread(&FishTracker::run, _fishTrackerObj, ref(_frame), ref(_returnMats), ref(_baseLock), ref(_fishCount), ref(_ROIRects));
+		_threadVector.push_back(move(trackingThread));		
+	}
 		
-	case fcMode::TRACKING_WITH_VIDEO:
-		_trackingUpdate();
-		break;
-		
-	case fcMode::CALIBRATION_WITH_VIDEO:
-		_calibrateUpdate();
-		break;
-		
-	case fcMode::VIDEO_RECORDER:
-		_videoRecordUpdate();
-		break;		
+	//All threads need to be joined before drawing (or looping back into update)
+	for (thread & thr : _threadVector)
+	{
+		if (thr.joinable())
+		{
+			thr.join();
+		}
 	}
 	
 	return 1;
@@ -240,9 +272,24 @@ int FishCenS::draw()
 	
 	_timers["drawTime"] = _millis();
 	
-	if(!_frame.empty())
+	//Get frameDraw prepared
+	if((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
 	{
-		imshow("Video", _frame);
+		cvtColor(_returnMats[2].mat, _returnMats[2].mat, COLOR_GRAY2BGR);
+		cvtColor(_returnMats[0].mat, _returnMats[0].mat, COLOR_GRAY2BGR);		
+		hconcat(_returnMats[0].mat, _returnMats[2].mat, _returnMats[0].mat);					
+		hconcat(_frame, _returnMats[1].mat, _frameDraw);		
+		vconcat(_frameDraw, _returnMats[0].mat, _frameDraw);
+	}
+	
+	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::VIDEO_RECORDER)
+	{		
+		_frame.copyTo(_frameDraw);
+	}
+	
+	if (!_frameDraw.empty())
+	{
+		imshow("Video", _frameDraw);
 	}
 	_returnKey = waitKey(1);
 	
@@ -269,6 +316,7 @@ int FishCenS::run()
 
 void FishCenS::_trackingUpdate()
 {
+	
 }
 
 
@@ -348,7 +396,7 @@ int FishCenS::_getVideoEntry(string& selectionStr)
 		//Previous page, show video files, re-do while loop
 		if (userInput == "p" || userInput == "P")
 		{
-			if (--page <= 0)
+			if (--page < 0)
 			{
 				page = pageTotal - 1;				
 			}
@@ -399,7 +447,7 @@ void FishCenS::_showVideoList(vector<string> videoFileNames, int page)
 	//Make sure we don't list files exceeding array size later
 	if (vecEnd > (int) videoFileNames.size())
 	{
-		vecEnd = videoFileNames.size() % VIDEOS_PER_PAGE;
+		vecEnd = videoFileNames.size();
 	}
 	
 	cout << "Showing files " << vecBegin << "-" << vecEnd << " of a total " << videoFileNames.size() << " files.\n";

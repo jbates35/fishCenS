@@ -1,14 +1,10 @@
 #pragma once
 
-#include <iostream>
-
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
 
 #include <mutex>
-#include <fstream>
-#include <cstdlib>
-#include <ctime>
+
 #include <thread>
 
 using namespace cv;
@@ -62,7 +58,7 @@ enum
 };
 
 enum class ftMode
-{        
+{   
 	TRACKING,
 	CALIBRATION
 };
@@ -85,6 +81,7 @@ namespace _ft
 	{
 		string title;
 		Mat mat;
+		bool isHSV;
 	};
 }
 

@@ -69,7 +69,6 @@ int FishCenS::init(fcMode mode)
 		double camTimer = _millis();
 		while((_millis() - camTimer) < SLEEP_TIMER)
 		{
-			;
 		}
 
 		//Load video frame, if timeout, restart while loop
@@ -101,15 +100,24 @@ int FishCenS::init(fcMode mode)
 		//TODO: 
 		//LIST FILES IN VIDEO DIRECTORY AND THEN
 		//ALLOW USER TO CHOOSE THE FILE THEYD LIKE TO SEE
-		string selectedVideoFile = _getVideoEntry();
+		string selectedVideoFile;
 		
-		_vid.open(TEST_VIDEO_PATH + TEST_VIDEO_FILE, CAP_FFMPEG);
+		if (_getVideoEntry(selectedVideoFile) < 0)
+		{
+			_log("Exiting to main loop.", true);
+			return -1;
+		}
+		
+		_vid.open(selectedVideoFile, CAP_FFMPEG);
 		
 		//Load frame to do analysis
 		_vid >> _frame;
 		
 		//Reset frame counter
 		_vid.set(CAP_PROP_POS_FRAMES, 0);
+		
+		//Vid FPS so i can draw properly
+		_vidFPS = _vid.get(CAP_PROP_FPS);
 		
 		//Set class video width and height for tracker
 		_videoWidth = _frame.size().width;
@@ -118,6 +126,11 @@ int FishCenS::init(fcMode mode)
 		//Keep track of frames during playback so it can be looped at last frame
 		_vidNextFramePos = 0;
 		_vidFramesTotal = _vid.get(CAP_PROP_FRAME_COUNT);
+		
+		_log("Selecting video \"" + selectedVideoFile + "\"", true);
+		_log("\t>> Width: " + to_string(_videoWidth) + "px", true);
+		_log("\t>> Width: " + to_string(_videoHeight) + "px", true);
+		_log("\t>> Frame rate: " + to_string(_vidFPS) + "fps", true);
 	}
 	
 	//Initiate tracking
@@ -173,6 +186,8 @@ int FishCenS::update()
 	}
 	
 	//Read video
+					//NOTE NEED TO PUT IN TIMER THAT ONLY ALLOWS FRAME TO BE SLOT IN EVERY 1/FPS
+	
 	if (_mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
 		//Load frame to do analysis
@@ -267,7 +282,7 @@ void FishCenS::_videoRecordUpdate()
 }
 
 
-string FishCenS::_getVideoEntry()
+int FishCenS::_getVideoEntry(string& selectionStr)
 {
 	//Prepare video path
 	string testVideoPath = TEST_VIDEO_PATH;
@@ -279,9 +294,6 @@ string FishCenS::_getVideoEntry()
 	//This is the return variable
 	int videoEntered = -1;
 	
-	//Variables for iterating through part of the vidoe file folder.
-	int page = 0;
-
 	//Get vector of all files
 	vector<string> videoFileNames;
 	for (const auto & entry : fs::directory_iterator(TEST_VIDEO_PATH))///fs::directory_iterator(TEST_VIDEO_PATH))
@@ -289,37 +301,92 @@ string FishCenS::_getVideoEntry()
 		videoFileNames.push_back(entry.path());
 	}
 	
+	//Need to return and exit to main if there are no files
+	if (videoFileNames.size() == 0)
+	{
+		_log("No video files in folder found in " + testVideoPath + "/", true);
+		return -1;
+	}
+	
+	//Variables for iterating through part of the vidoe file folder.
+	int page = 0;
+	int pageTotal = (videoFileNames.size() / VIDEOS_PER_PAGE) + 1;
+	cout << "Page total is " << pageTotal << endl;
+	
 	cout << videoFileNames.size() << " files found: \n";
 	
 	//Shows 
 	_showVideoList(videoFileNames, page);
 	
-	cout << "Select video. Enter \"q\" to go back. Enter \"n\" or \"p\" for more videos.\n";
-	cout << "To select video, enter number associated with file number.\n";
-	cout << "I.e., to select \"File 4:\t \'This video.avi\'\", you would simply enter 4.\n";
-	cout << "File: ";
+	while (videoEntered == -1)
+	{
+		cout << "Select video. Enter \"q\" to go back. Enter \"n\" or \"p\" for more videos.\n";
+		cout << "To select video, enter number associated with file number.\n";
+		cout << "I.e., to select \"File 4:\t \'This video.avi\'\", you would simply enter 4.\n";
+		cout << "File: ";
 	
-	string userInput;
-	cin >> userInput;
+		string userInput;
+		cin >> userInput;
 	
-	bool inputIsInteger = false;
+		//Leave the function and go back to main
+		if (userInput == "q" || userInput == "Q") 
+		{
+			return -1;
+		}
+		
+		//Next page, show video files, re-do while loop
+		if (userInput == "n" || userInput == "N")
+		{
+			if (++page >= pageTotal)
+			{
+				page = 0;
+			}
+			_showVideoList(videoFileNames, page);
+			continue;
+		}
+		
+		//Previous page, show video files, re-do while loop
+		if (userInput == "p" || userInput == "P")
+		{
+			if (--page <= 0)
+			{
+				page = pageTotal - 1;				
+			}
+			_showVideoList(videoFileNames, page);
+			continue;
+		}
+		
+		//Need to make sure the string can be converted to an integer
+		bool inputIsInteger = true;
+		for (int charIndex = 0; charIndex < (int) userInput.size(); charIndex++)
+		{
+			inputIsInteger = isdigit(userInput[charIndex]);
+			
+			if (!inputIsInteger)
+			{
+				break;
+			}
+		}
+		
+		if (!inputIsInteger) 
+		{
+			_log("Input must be an integer between 0 and " + to_string(videoFileNames.size() - 1) + " (inclusive)", true);
+			continue;
+		}
+		
+		int userInputInt = stoi(userInput);
+		
+		if (userInputInt < 0 || userInputInt >= (int) videoFileNames.size())
+		{			
+			_log("Input must be an integer between 0 and " + to_string(videoFileNames.size() - 1) + " (inclusive)", true);
+			continue;
+		}
+		
+		videoEntered = userInputInt;		
+	}	
 	
-	
-	
-//
-//	while(videoEntered==-1)
-//	{
-//
-//	}
-	
-
-	
-	//Display files n*(1-20) to screen
-
-
-	
-	//Return filename selected
-	return "";
+	selectionStr = videoFileNames[videoEntered];
+	return 1;
 }
 
 
@@ -330,13 +397,15 @@ void FishCenS::_showVideoList(vector<string> videoFileNames, int page)
 	int vecEnd = (page + 1) * VIDEOS_PER_PAGE;
 	
 	//Make sure we don't list files exceeding array size later
-	if (vecEnd > videoFileNames.size())
+	if (vecEnd > (int) videoFileNames.size())
 	{
-		vecEnd = videoFileNames.size();
+		vecEnd = videoFileNames.size() % VIDEOS_PER_PAGE;
 	}
 	
+	cout << "Showing files " << vecBegin << "-" << vecEnd << " of a total " << videoFileNames.size() << " files.\n";
+	
 	//Iterate and list file names
-	for (int fileIndex = 0; fileIndex < videoFileNames.size(); fileIndex++)
+	for (int fileIndex = vecBegin; fileIndex < vecEnd; fileIndex++)
 	{		
 		//This gives us the full path, which is useful later, but we just need the particular file name
 		//Therefore, following code delimits with the slashbars

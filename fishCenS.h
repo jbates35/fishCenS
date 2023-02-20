@@ -39,7 +39,7 @@ namespace _fc
 	const int SLEEP_TIMER	= 300; //milliseconds
 
 	//For video listing
-	const int VIDEOS_PER_PAGE = 20; //20 listings per page when showing which videos
+	const int VIDEOS_PER_PAGE = 5; //20 listings per page when showing which videos
 	
 }
 
@@ -132,6 +132,8 @@ private:
 	VideoCapture _vid;
 	int _vidFramesTotal; // For looping video over at last frame
 	int _vidNextFramePos;
+	double _vidFPS;
+	double _vidPeriod;
 	
 	//Mutex for threadlocking
 	mutex _baseLock;
@@ -151,7 +153,7 @@ private:
 	void _videoRecordUpdate();
 	
 	//Helps list files for video playback initializer
-	string _getVideoEntry();
+	int _getVideoEntry(string& selectionStr);
 	void _showVideoList(vector<string> videoFileNames, int page);
 	
 	//General helper functions

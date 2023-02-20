@@ -63,6 +63,13 @@ enum class ftMode
 	CALIBRATION
 };
 
+enum class imgMode
+{
+	BGR,
+	HSV,
+	BINARY
+};
+
 namespace _ft
 {		
 	//Struct keeping track of parameters of fish
@@ -81,7 +88,7 @@ namespace _ft
 	{
 		string title;
 		Mat mat;
-		bool isHSV;
+		imgMode isHSV;
 	};
 }
 

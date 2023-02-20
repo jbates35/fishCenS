@@ -49,13 +49,13 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 		
 			//Mask mat
 			tempMatStruct.title = "MASK";
-			tempMatStruct.isHSV = false;
+			tempMatStruct.colorMode = imgMode::BINARY;
 			frameMask.copyTo(tempMatStruct.mat);
 			returnMats.push_back(tempMatStruct);
 		
 			//BG-Removed mat
 			tempMatStruct.title = "BG REMOVED";
-			tempMatStruct.isHSV = false;
+			tempMatStruct.colorMode = imgMode::BGR;
 			frameRaw.copyTo(tempMatStruct.mat);
 			returnMats.push_back(tempMatStruct);		
 		}
@@ -288,7 +288,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 		
 		//Processed binary image
 		tempMatStruct.title = "PROCESSED";
-		tempMatStruct.isHSV = true;
+		tempMatStruct.colorMode = imgMode::BINARY;
 		frameProcessed.copyTo(tempMatStruct.mat);
 		returnMats.push_back(tempMatStruct);		
 	}	

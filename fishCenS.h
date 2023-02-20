@@ -36,7 +36,7 @@ namespace _fc
 	const double DRAW_FPS = 30; //FPS of opencv imshow
 	const double DRAW_PERIOD = 1000 / DRAW_FPS; //Period of opencv imshow in milliseconds
 	
-	const double ULTRASONIC_PERIOD = 2000; //ms
+	const double DEPTH_PERIOD = 2000; //ms
 	const double TEMPERATURE_SENSOR = 2000; //ms
 	
 	const int SLEEP_TIMER	= 300; //milliseconds
@@ -154,7 +154,8 @@ private:
 	map<string, double> _timers;
 	
 	//Sensors stuff
-	
+	int _currentDepth;
+	int _currentTemp;
 	
 	////////////// METHODS //////////////
 	void _trackingUpdate(); //takes care of normal tracking, and tracking with video (alpha mode)

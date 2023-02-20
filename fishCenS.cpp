@@ -71,6 +71,8 @@ int FishCenS::init(fcMode mode)
 	_timers.clear();
 	_timers["runTime"] = _millis();
 	_timers["drawTime"] = _millis();
+	_timers["depthTimer"] = _millis();
+	_timers["tempTimer"] = _millis();
 	
 	//Tracking and fish counting
 	_fishCount = 0;
@@ -208,6 +210,8 @@ int FishCenS::init(fcMode mode)
 	}
 	
 	//Initiate any sensor stuff
+	_currentDepth = -1;
+	_currentTemp = -1;
 	
 	//Load any saved file parameters
 
@@ -221,8 +225,20 @@ int FishCenS::init(fcMode mode)
 int FishCenS::update()
 {
 	
-	//Start sensors thread
-	
+	//Start depth sensors thread every DEPTH_PERIOD
+	Depth depth;
+	if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
+	{	
+		_timers["depthTimer"] = _millis();
+		
+		if (depth.init() > 0)
+		{
+			thread depthThread(&Depth::getDepth, depth, ref(_currentDepth), ref(_baseLock));
+			depthThread.detach();
+		}
+		
+	}
+
 	
 	//	Next two if statements just load _frame with the proper content,
 	//	depending on whether the camera is being read or a test video is
@@ -290,6 +306,8 @@ int FishCenS::update()
 
 int FishCenS::draw()
 {
+	lock_guard<mutex> guard(_baseLock);
+	
 	if (_millis() - _timers["drawTime"] < DRAW_PERIOD)
 	{
 		return -1;

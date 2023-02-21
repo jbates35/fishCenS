@@ -55,19 +55,23 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	    
 		char data[4] = { 0, 0, 0, 0 }; //Data received from ultrasonic sensor (header, data, data, and checksum bytes)
 	    
-		while ((serDataAvailable(_uart)) <= 3) {}
+		while ((serDataAvailable(_uart)) <= 3) 
+		{
+		}
 
 		bytesRead = serRead(_uart, data, 4); //Reads bytes in serial data and places in data[] array
-
 	    
-		if (data[0] == header) {
+		if (data[0] == header) 
+		{
 			//Checks first byte matches expected header value
-			if (((data[0] + data[1] + data[2]) & 0x00ff) == data[3]) {
+			if (((data[0] + data[1] + data[2]) & 0x00ff) == data[3]) 
+			{
 				//Checks data against 'checksum' byte
 				distance = (data[1] << 8) + data[2]; //Calculates distance in mm if data is good
 				break;                                                  //Breaks While loop
 			}
-			else {
+			else 
+			{
 				//If data is not good it increments attempts
 				attempts++;
 			}

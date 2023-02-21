@@ -109,8 +109,8 @@ Note: Signals are from perspective of sensor
 ```
 Vcc         -> Red/Red
 Gnd         -> Black/Black
-RX (Val)    -> Yellow/Blue  
-TX          -> White/Green
+RX (Select) -> Yellow/Blue  
+TX (Val)    -> White/Green
 ```
 *Note Ultrasonic sensor VCC can be 3.3V or 5V*
 

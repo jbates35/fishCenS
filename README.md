@@ -112,6 +112,7 @@ Gnd         -> Black/Black
 RX (Val)    -> Yellow/Blue  
 TX          -> White/Green
 ```
+*Note Ultrasonic sensor VCC can be 3.3V or 5V*
 
 Temperature sensor: https://www.sparkfun.com/products/11050
 ```
@@ -119,4 +120,4 @@ Vcc   -> Red
 Gnd   -> Black
 Sig   -> White
 ```
-Note Temperature sensor VCC can be 3.3V or 5V
+*Note Temperature sensor VCC can be 3.3V or 5V*

@@ -25,7 +25,7 @@ private:
 	string filename;        //File created by constructor will be written to by getDepth
 	fstream Distdata;       //fstream object to write to log file
 	void GetTime();         //Sets DateTimeStr to current time
-	int _uart;
+	int _uart;				//handle for UART
 
 public:
 

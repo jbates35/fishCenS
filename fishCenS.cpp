@@ -126,8 +126,7 @@ int FishCenS::init(fcMode mode)
 	
 	//Initiate test video file 
 	if (_mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION_WITH_VIDEO)
-	{
-		//TODO: 
+	{		
 		//LIST FILES IN VIDEO DIRECTORY AND THEN
 		//ALLOW USER TO CHOOSE THE FILE THEYD LIKE TO SEE
 		string selectedVideoFile;
@@ -143,7 +142,7 @@ int FishCenS::init(fcMode mode)
 		//Load frame to do analysis
 		_vid >> _frame;
 		
-		//Reset frame counter
+		//Reset frame position in the video
 		_vid.set(CAP_PROP_POS_FRAMES, 0);
 		
 		//Timer's needed to ensure video is played at proper fps

@@ -13,25 +13,25 @@ Depth::~Depth()
 {
 	serClose(_uart);
 	gpioTerminate();
-	GetTime();
-	Distdata.open(filename, ios::app);
-	Distdata << DateTimeStr << ", " << _depthResult << ",\n";
-	Distdata.close();
+//	GetTime();
+//	Distdata.open(filename, ios::app);
+//	Distdata << DateTimeStr << ", " << _depthResult << ",\n";
+//	Distdata.close();
 }
 
 
 int Depth::init()
 {
 	if (serOpen(SER_PORT, 9600, 0) < 0) {
-		cout << "\nUart Failed";
+		cout << "Uart Failed\n";
 		return -1;
 	}
-	
-	GetTime();
-	filename = DateTimeStr + "_Depth.txt";
-	Distdata.open(filename, ios::out);
-	Distdata << "time, Depth,\n";
-	Distdata.close();
+//	
+//	GetTime();
+//	filename = DateTimeStr + "_Depth.txt";
+//	Distdata.open(filename, ios::out);
+//	Distdata << "time, Depth,\n";
+//	Distdata.close();
 	
 	return 1;
 }

@@ -11,6 +11,8 @@ using namespace std;
 namespace _depth
 {
 	char SER_PORT[12] = { '/', 'd', 'e', 'v', '/', 't', 't', 'y', 'A', 'M', 'A', '0' };
+	int UART_DELAY = 50; //ms
+	int BAUD_RATE = 9600;
 }
 
 using namespace _depth;
@@ -19,12 +21,11 @@ class Depth {
 
 private:
 
-    string DateTimeStr;
-    string filename;
-    fstream Distdata;
-    void GetTime();
+ 	string DateTimeStr;     //Value set by GetTime method can be used by other methods
+	string filename;        //File created by constructor will be written to by getDepth
+	fstream Distdata;       //fstream object to write to log file
+	void GetTime();         //Sets DateTimeStr to current time
 	int _uart;
-	int _depthResult;
 
 public:
 

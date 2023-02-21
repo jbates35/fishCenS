@@ -2,6 +2,7 @@
 #include <pigpio.h>
 #include <ctime>
 #include <sstream>
+#include <opencv2/opencv.hpp>
 
 using namespace std;
 
@@ -12,7 +13,6 @@ Depth::Depth()
 Depth::~Depth()
 {
 	serClose(_uart);
-	gpioTerminate();
 	//	GetTime();
 	//	Distdata.open(filename, ios::app);
 	//	Distdata << DateTimeStr << ", " << _depthResult << ",\n";
@@ -22,13 +22,19 @@ Depth::~Depth()
 
 int Depth::init()
 {
-	_uart = serOpen(SER_PORT, BAUD_RATE, 0);
+	//char SER_PORT[] = { '/', 'd', 'e', 'v', '/', 't', 't', 'y', 'A', 'M', 'A', '0' }; // UNCOMMENT If PI 3 
+	char serPort[] = "/dev/serial0";
+	
+	_uart = serOpen(serPort, BAUD_RATE, 0);
+	
+	gpioDelay(UART_DELAY); //Delay to wait for serOpen to return handle
+	
 	if (_uart < 0) {
 		cout << "Uart Failed\n";
 		return -1;
 	}
-	gpioDelay(UART_DELAY); //Delay to wait for serOpen to return handle
 
+	cout << "Uart Success\n";
 //	
 //	GetTime();
 //	filename = DateTimeStr + "_Depth.txt";
@@ -47,20 +53,16 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	int bytesRead;
 	int attempts = 0; //Breaks while loop if proper data is not received in 4 attempts
 	int header = 0xff; //Header byte from sensor
-	
+	char data[4] = { 0, 0, 0, 0 }; //Data received from ultrasonic sensor (header, data, data, and checksum bytes)
 
-	while (attempts < 4) 
-	{    
-		cout << "Taking in depth data...\n";
-	    
-		char data[4] = { 0, 0, 0, 0 }; //Data received from ultrasonic sensor (header, data, data, and checksum bytes)
-	    
-		while ((serDataAvailable(_uart)) <= 3) 
+	while (true) {
+		
+		while ((serDataAvailable(_uart) <= 3))  
 		{
 		}
-
+		
 		bytesRead = serRead(_uart, data, 4); //Reads bytes in serial data and places in data[] array
-	    
+		
 		if (data[0] == header) 
 		{
 			//Checks first byte matches expected header value
@@ -70,19 +72,13 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 				distance = (data[1] << 8) + data[2]; //Calculates distance in mm if data is good
 				break;                                                  //Breaks While loop
 			}
-			else 
-			{
-				//If data is not good it increments attempts
-				attempts++;
-			}
 		}
-	}
-	
-	if (attempts == 4) 
-	{
-		depthResult = 9999;
-		cerr << "\nUnstable Data";
-		return -1;
+		if (attempts > 4) 
+		{
+			//If 4 attempts failed it breaks while loop
+			return -1;
+		}
+		attempts++; //Increments attempts if header does not match expected value
 	}
 	
 	//clog << "\n" << distance[0];
@@ -92,6 +88,8 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 		std::lock_guard<mutex> guard(lock);
 		depthResult = distance;	
 	}
+	
+	//cout << "Success: Depth data stored.\nDepth: " << distance << endl;
 	return 1;
 }
 

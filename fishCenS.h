@@ -36,7 +36,7 @@ namespace _fc
 	const double DRAW_FPS = 30; //FPS of opencv imshow
 	const double DRAW_PERIOD = 1000 / DRAW_FPS; //Period of opencv imshow in milliseconds
 	
-	const double DEPTH_PERIOD = 2000; //ms
+	const double DEPTH_PERIOD = 100; //2000 //ms
 	const double TEMPERATURE_SENSOR = 2000; //ms
 	
 	const int SLEEP_TIMER	= 300; //milliseconds
@@ -47,6 +47,22 @@ namespace _fc
 	//For calibration mode
 	const double MAX_WIDTH_PER_FRAME = 640;
 	const double MAX_HEIGHT_PER_FRAME = 360;
+	
+	//For putting sensor information
+	const Point DEPTH_STRING_POINT = Point(50, VIDEO_HEIGHT - 40);
+	const Point TEMP_STRING_POINT = Point(50, VIDEO_HEIGHT - 20);
+	
+	const double SENSOR_STRING_SIZE = 1;
+	const double SENSOR_STRING_THICKNESS = 2;
+	
+	const Scalar YELLOW = Scalar(0, 255, 255);
+	const Scalar GREEN = Scalar(0, 255, 0);
+	const Scalar BLUE = Scalar(255, 0, 0);
+	const Scalar RED = Scalar(0, 0, 255);
+	const Scalar TEAL = Scalar(255, 255, 0);
+	const Scalar MAGENTA = Scalar(255, 0, 255);
+	const Scalar WHITE = Scalar(255, 255, 255);
+	const Scalar GREY = Scalar(180, 180, 180);
 }
 
 enum class fcMode
@@ -154,6 +170,8 @@ private:
 	map<string, double> _timers;
 	
 	//Sensors stuff
+	Depth _depthObj;
+	int _serialIsOpen;
 	int _currentDepth;
 	int _currentTemp;
 	

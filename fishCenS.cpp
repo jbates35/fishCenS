@@ -204,11 +204,11 @@ int FishCenS::init(fcMode mode)
 	//Turn LED light on 
 	if (_mode == fcMode::TRACKING || _mode == fcMode::CALIBRATION || _mode == fcMode::VIDEO_RECORDER)
 	{
-		gpioWrite(LED_PIN, 1);
-		
+		gpioWrite(LED_PIN, 1);		
 	}
 	
-	//Initiate any sensor stuff
+	//Initiate sensors - including serial for ultrasonic
+	_serialIsOpen = _depthObj.init();
 	_currentDepth = -1;
 	_currentTemp = -1;
 	
@@ -225,15 +225,17 @@ int FishCenS::update()
 {
 	
 	//Start depth sensors thread every DEPTH_PERIOD
-	Depth depth;
+	Depth depthObj;
+	
 	if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
 	{	
 		_timers["depthTimer"] = _millis();
 		
-		if (depth.init() > 0)
+		if (depthObj.init() > 0)
 		{
-			thread depthThread(&Depth::getDepth, depth, ref(_currentDepth), ref(_baseLock));
-			depthThread.detach();
+			depthObj.getDepth(_currentDepth, _baseLock);
+//			std::thread depthThread(&Depth::getDepth, depth, ref(_currentDepth), ref(_baseLock));
+//			_threadVector.push_back(move(depthThread));
 		}
 		
 	}
@@ -327,6 +329,17 @@ int FishCenS::draw()
 	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::VIDEO_RECORDER)
 	{		
 		_frame.copyTo(_frameDraw);
+	}
+	
+	//With tracking mode, we need sensor information (Maybe need this for calibration mode w video too?)
+	if (_mode == fcMode::TRACKING)
+	{
+		//Sensor strings to put on screen
+		string depthStr = "Depth: " + to_string(_currentDepth);
+		string tempStr = "Temperature: " + to_string(_currentTemp);
+		
+		putText(_frameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 	}
 	
 	if (!_frameDraw.empty())

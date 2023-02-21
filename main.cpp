@@ -14,6 +14,8 @@ int main(int argc, char *argv[])
 		cout << "Cannot find pigpio, exiting...\n";
 		return -1;
 	}
+	
+	cout << "GPIO initialized and open\n\n";
 
 	char menuKey = '\0';
 
@@ -73,6 +75,8 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	
+	gpioTerminate();
 	
 	return 0;
 }

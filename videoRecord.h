@@ -23,7 +23,12 @@ enum vrMode
 	VIDEO_ON
 };
 
-#define MAX_DATA_SIZE 10000 // Max amount of info logger can contain
+namespace _vr
+{
+	const int MAX_DATA_SIZE = 10000; // Max amount of info logger can contain	
+}
+
+using namespace _vr;
 
 class VideoRecord
 {
@@ -81,5 +86,5 @@ private:
 	
 	//Gets date&time to name video
 	string _getTime();
-	void _log(string data);	
+	void _log(string data, bool outputToScreen=false);	
 };

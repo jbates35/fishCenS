@@ -101,3 +101,23 @@ this should show
 serial0 -> tty0AMA
 
 serial1 -> ttyS0
+
+
+PIN/Colors:
+Ultrasonic sensor: https://wiki.dfrobot.com/_A02YYUW_Waterproof_Ultrasonic_Sensor_SKU_SEN0311
+Note: Signals are from perspective of sensor
+```
+Vcc         -> Red/Red
+Gnd         -> Black/Black
+RX (Select) -> Yellow/Blue  
+TX (Val)    -> White/Green
+```
+*Note Ultrasonic sensor VCC can be 3.3V or 5V*
+
+Temperature sensor: https://www.sparkfun.com/products/11050
+```
+Vcc   -> Red
+Gnd   -> Black
+Sig   -> White
+```
+*Note Temperature sensor VCC can be 3.3V or 5V*

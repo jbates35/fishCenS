@@ -170,8 +170,6 @@ private:
 	map<string, double> _timers;
 	
 	//Sensors stuff
-	Depth _depthObj;
-	int _serialIsOpen;
 	int _currentDepth;
 	int _currentTemp;
 	

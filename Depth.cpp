@@ -34,7 +34,6 @@ int Depth::init()
 		return -1;
 	}
 
-	cout << "Uart Success\n";
 //	
 //	GetTime();
 //	filename = DateTimeStr + "_Depth.txt";
@@ -61,7 +60,7 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 		{
 		}
 		
-		bytesRead = serRead(_uart, data, 4); //Reads bytes in serial data and places in data[] array
+		serRead(_uart, data, 4); //Reads bytes in serial data and places in data[] array
 		
 		if (data[0] == header) 
 		{

@@ -208,7 +208,6 @@ int FishCenS::init(fcMode mode)
 	}
 	
 	//Initiate sensors - including serial for ultrasonic
-	_serialIsOpen = _depthObj.init();
 	_currentDepth = -1;
 	_currentTemp = -1;
 	

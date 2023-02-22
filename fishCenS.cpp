@@ -223,20 +223,31 @@ int FishCenS::init(fcMode mode)
 int FishCenS::update()
 {
 	
-	//Start depth sensors thread every DEPTH_PERIOD
-	Depth depthObj;
+
 	
-	if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
-	{	
-		_timers["depthTimer"] = _millis();
-		
-		if (depthObj.init() > 0)
-		{
-			depthObj.getDepth(_currentDepth, _baseLock);
-//			std::thread depthThread(&Depth::getDepth, depth, ref(_currentDepth), ref(_baseLock));
-//			_threadVector.push_back(move(depthThread));
+	if (_mode == fcMode::TRACKING)
+	{		
+		if ((_millis() - _timers["tempTimer"]) >= TEMPERATURE_PERIOD)
+		{	
+			_timers["tempTimer"] = _millis();
+			_temperature::getTemperature(_currentTemp, _baseLock);
 		}
 		
+		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
+		{	
+			_timers["depthTimer"] = _millis();	
+			
+			//Start depth sensors thread every DEPTH_PERIOD
+			Depth depthObj;
+		
+			if (depthObj.init() > 0)
+			{
+				depthObj.getDepth(_currentDepth, _baseLock);
+				//			std::thread depthThread(&Depth::getDepth, depth, ref(_currentDepth), ref(_baseLock));
+				//			_threadVector.push_back(move(depthThread));
+			}
+		
+		}
 	}
 
 	

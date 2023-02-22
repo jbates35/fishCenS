@@ -49,7 +49,6 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 {
     
 	int distance = 0; //Distance to water
-	int bytesRead;
 	int attempts = 0; //Breaks while loop if proper data is not received in 4 attempts
 	int header = 0xff; //Header byte from sensor
 	char data[4] = { 0, 0, 0, 0 }; //Data received from ultrasonic sensor (header, data, data, and checksum bytes)

@@ -1,5 +1,10 @@
 #include "fishTracker.h"
 
+#include <iostream>
+#include <fstream>
+#include <cstdlib>
+#include <ctime>
+
 //Nothing is needed in constructor, using init() instead
 FishTracker::FishTracker()
 {
@@ -12,44 +17,48 @@ FishTracker::~FishTracker()
 
 bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock, int& fishCount, vector<Rect>& ROIRects)
 {
-	//Make automatic mutex control
-	lock_guard<mutex> guard(lock);
-
-	//Make sure there's actually a frame to do something with
-	if (im.empty())
-	{
-		_logger(_loggerData, "Could not load frame, exiting thread");
-		return false;
-	}
-	
-	//Clear mats that will be returned
-	returnMats.clear();
-
 	//Make new Mat so it can be used without needing mutex
 	Mat frameRaw, frameProcessed, frameMask;
 	frameRaw = Mat::zeros(_frameSize, CV_8UC3);
 	
-	//First, get mask of image...
-	_pBackSub->apply(im, frameMask);
+	{
+		//Make automatic mutex control
+		lock_guard<mutex> guard(lock);
 
-	//Copy only parts of the image that moved
-	im.copyTo(frameRaw, frameMask);
+		//Make sure there's actually a frame to do something with
+		if (im.empty())
+		{
+			_logger(_loggerData, "Could not load frame, exiting thread");
+			return false;
+		}
 	
-	//Returns Mats if need be
-	if (_programMode == CALIBRATION)
-	{	
-		//Make struct for storing in returnMats
-		returnMatsStruct tempMatStruct;
+		//Clear mats that will be returned
+		returnMats.clear();
 		
-		//Mask mat
-		tempMatStruct.title = "MASK";
-		frameMask.copyTo(tempMatStruct.mat);
-		returnMats.push_back(tempMatStruct);
+		//First, get mask of image...
+		_pBackSub->apply(im, frameMask);
+
+		//Copy only parts of the image that moved
+		im.copyTo(frameRaw, frameMask);
+	
+		//Returns Mats if need be
+		if (_programMode == ftMode::CALIBRATION)
+		{	
+			//Make struct for storing in returnMats
+			returnMatsStruct tempMatStruct;
 		
-		//BG-Removed mat
-		tempMatStruct.title = "BG REMOVED";
-		frameRaw.copyTo(tempMatStruct.mat);
-		returnMats.push_back(tempMatStruct);		
+			//Mask mat
+			tempMatStruct.title = "MASK";
+			tempMatStruct.colorMode = imgMode::BINARY;
+			frameMask.copyTo(tempMatStruct.mat);
+			returnMats.push_back(tempMatStruct);
+		
+			//BG-Removed mat
+			tempMatStruct.title = "BG REMOVED";
+			tempMatStruct.colorMode = imgMode::BGR;
+			frameRaw.copyTo(tempMatStruct.mat);
+			returnMats.push_back(tempMatStruct);		
+		}
 	}
 
 	//Get time for measuring elapsed tracking time
@@ -269,13 +278,17 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	}
 		
 	//Returns Mats if need be
-	if (_programMode == CALIBRATION)
+	if (_programMode == ftMode::CALIBRATION)
 	{	
+		//Make automatic mutex control
+		lock_guard<mutex> guard(lock);
+		
 		//Make struct for storing in returnMats
 		returnMatsStruct tempMatStruct;
 		
 		//Processed binary image
 		tempMatStruct.title = "PROCESSED";
+		tempMatStruct.colorMode = imgMode::BINARY;
 		frameProcessed.copyTo(tempMatStruct.mat);
 		returnMats.push_back(tempMatStruct);		
 	}	
@@ -343,7 +356,7 @@ bool FishTracker::init(unsigned int video_width, unsigned int video_height, Scal
 	_loggerFilepath = DEFAULT_FILE_PATH;
 	
 	//Test mode to display possible helpful debugging parameters
-	_programMode = NORMAL;
+	_programMode = ftMode::TRACKING;
 	
 	return true;
 }
@@ -494,6 +507,37 @@ int FishTracker::getFrameCenter()
 	return _frameMiddle;
 }
 
+
+//Sets the program mode, i.e. calibration, normal, testing, etc.
+void FishTracker::setMode(ftMode mode)
+{
+	_programMode = mode;
+}
+
+//Describes whether the tracker is object or not
+bool FishTracker::isTracking()
+{
+	return _fishTracker.size() > 0;
+}
+
+//Returns amount of fishTracker objects being tracked
+int FishTracker::trackerAmount()
+{
+	return _fishTracker.size();
+}
+
+//Setter for filepath
+void FishTracker::setFilepath(string filepath)
+{
+	_loggerFilepath = filepath;
+}
+
+//Setter for filename
+void FishTracker::setFilename(string filename)
+{
+	_loggerFilename = filename;
+}
+
 //Helper that gets the current time in ymd hms and returns a string
 std::string FishTracker::_getTime()
 {
@@ -633,10 +677,4 @@ vector<Rect> FishTracker::_getRects()
 	}
 	
 	return tempRects;
-}
-
-//Sets the program mode, i.e. calibration, normal, testing, etc.
-void FishTracker::setMode(int mode)
-{
-	_programMode = mode;
 }

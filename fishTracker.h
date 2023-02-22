@@ -1,48 +1,17 @@
 #pragma once
 
-#include <iostream>
-
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
 
 #include <mutex>
-#include <fstream>
-#include <cstdlib>
-#include <ctime>
+
 #include <thread>
 
 using namespace cv;
 using namespace std;
 
-enum
-{
-	RANGE_MIN,
-	RANGE_MAX
-};
 
-enum
-{
-	OFF,
-	ON		
-};
 
-enum 
-{        
-	NORMAL,
-	CALIBRATION,
-	TESTING
-};
-
-//Default params for eroding the image to separate balls
-#define DEFAULT_ERODE_SIZE Size(2,2)
-#define DEFAULT_ERODE_AMOUNT 3
-
-//Default params for dilating the image to smooth edges
-#define DEFAULT_DILATE_SIZE Size(4,4)
-#define DEFAULT_DILATE_AMOUNT 1
-
-//Max size of the vector that holds all the data, to prevent wildly large files
-#define MAX_DATA_SIZE 5000
 
 //Minimum area to initiate tracker to
 #define DEFAULT_MIN_AREA 800
@@ -68,23 +37,66 @@ enum
 //Maximum amount of time object can be tracked before it's dropped from the tracker
 #define MAX_TRACKER_DURATION 30 //(seconds)
 
-//Struct keeping track of parameters of fish
-struct FishTrackerStruct
+enum
 {
-	Ptr<Tracker> tracker;
-	vector<int> posX;
-	bool isTracked;
-	Rect roi;
-	int lostFrameCount;
-    double startTime;
+	RANGE_MIN,
+	RANGE_MAX
 };
 
-//Struct for passing additional mats
-struct returnMatsStruct
+enum
 {
-	string title;
-	Mat mat;
+	OFF,
+	ON		
 };
+
+enum class ftMode
+{   
+	TRACKING,
+	CALIBRATION
+};
+
+enum class imgMode
+{
+	BGR,
+	HSV,
+	BINARY
+};
+
+namespace _ft
+{		
+	
+	//Default params for eroding the image to separate balls
+	const Size DEFAULT_ERODE_SIZE = Size(2, 2);
+	const int DEFAULT_ERODE_AMOUNT = 3;	
+
+	//Default params for dilating the image to smooth edges
+	const Size DEFAULT_DILATE_SIZE = Size(4, 4);
+	const int DEFAULT_DILATE_AMOUNT = 1;
+	
+	//Max size of the vector that holds all the data, to prevent wildly large files
+	const int MAX_DATA_SIZE = 5000;
+	
+	//Struct keeping track of parameters of fish
+	struct FishTrackerStruct
+	{
+		Ptr<Tracker> tracker;
+		vector<int> posX;
+		bool isTracked;
+		Rect roi;
+		int lostFrameCount;
+		double startTime;
+	};
+
+	//Struct for passing additional mats
+	struct returnMatsStruct
+	{
+		string title;
+		Mat mat;
+		imgMode colorMode;
+	};
+}
+
+using namespace _ft;
 
 /**
  * @brief Fish Tracking class for Fish-CenS
@@ -279,7 +291,19 @@ public:
 	 * @brief Sets _programMode for either calibration, run, etc.
 	 * @param mode Refer to enums for list of modes
 	 **/
-	void setMode(int mode);
+	void setMode(ftMode mode);
+	
+	/**
+	 *	@brief Describes whether the tracker is object or not
+	 *	@return True if tracker is active, false if not.
+	 **/
+	bool isTracking();
+	
+	/**
+	 *	@brief Returns amount of fishTracker objects being tracked
+	 *	@return Size of vector
+	 **/
+	int trackerAmount();
 	
 private:
 	////////// PARAMETERS ///////////
@@ -317,7 +341,7 @@ private:
 	vector<double> _loggerCsv; // Writes elapsed tracking computation times 
 	
 	//Other important data
-	int _programMode;
+	ftMode _programMode;
 	
 	/////////// FUNCTIONS /////////////
 	
@@ -326,6 +350,5 @@ private:
 	double _millis();
 	void _logger(vector<string>& logger, string data);
 	vector<Rect> _getRects();
-	
 	
 };

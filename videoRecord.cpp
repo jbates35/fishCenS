@@ -104,13 +104,10 @@ void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* =
 	bool isColor = (frame.type() == CV_8UC3);
 	Size videoSize = frame.size();
 
-	_log("Starting video...");
-	_log("Theoretical frame rate is " + to_string(fps) + "fps");
-	_log("Theoretical frame length is " + to_string((double) 1000 / fps) + "ms");
-	_log("Camera size is <" + to_string(videoSize.width) + ", " + to_string(videoSize.height) + "> px");
-	
-	cout << "Starting video\n";
-	cout << "FPS is " + to_string(fps) + "\nFrame length is " + to_string((double) 1000 / fps)+ "ms\n";
+	_log("Starting video...", true);
+	_log("\t>>Theoretical frame rate is " + to_string(fps) + "fps", true);
+	_log("\t>>Theoretical frame length is " + to_string((double) 1000 / fps) + "ms", true);
+	_log("\t>>Camera size is <" + to_string(videoSize.width) + ", " + to_string(videoSize.height) + "> px", true);
 	
 	//Start video timer
 	_startTime = getTickCount() / getTickFrequency();
@@ -180,15 +177,22 @@ std::string VideoRecord::_getTime()
 	return timestamp.str();
 }
 
-void VideoRecord::_log(string data)
+void VideoRecord::_log(string data, bool outputToScreen)
 {
+	string dataStr = _getTime() + ": " + data + "\n";
+
 	//Clear first entry in the vector if buffer size is full
 	if (_loggerVec.size() > MAX_DATA_SIZE)
 	{
 		_loggerVec.erase(_loggerVec.begin());
 	}
 	
-	_loggerVec.push_back(_getTime() + ": " + data + "\n");
+	_loggerVec.push_back(dataStr);
+
+	if(outputToScreen==true)
+	{
+		cout << dataStr;
+	}
 }
 
 

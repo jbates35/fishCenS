@@ -12,7 +12,18 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 
 set(LIBRARIES_FROM_REFERENCES "")
 
-add_executable(fishCenS fishCenS.cpp fishTracker.cpp fishTracker.h cvui.h lccv.cpp lccv.hpp libcamera_app.cpp libcamera_app.h libcamera_app_options.cpp libcamera_app_options.h videoRecord.cpp videoRecord.h led.cpp led.h)
+add_executable(fishCenS main.cpp 
+fishCenS.cpp fishCenS.h
+fishTracker.cpp fishTracker.h 
+cvui.h
+lccv.cpp lccv.hpp
+libcamera_app.cpp libcamera_app.h
+libcamera_app_options.cpp libcamera_app_options.h
+videoRecord.cpp videoRecord.h
+led.cpp led.h
+Temperature.cpp Temperature.h
+Depth.cpp Depth.h
+)
 
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
     if (NOT CMAKE_BUILD_TYPE)
@@ -96,4 +107,4 @@ message(STATUS "    include path: ${LIBCAMERA_INCLUDE_DIRS}")
 include_directories(include ${LIBCAMERA_INCLUDE_DIRS} ${pigpio_INCLUDE_DIR} ${OPENCV_INCLUDE_DIRS})
 
 set_target_properties(fishCenS PROPERTIES PREFIX "" IMPORT_PREFIX "")
-target_link_libraries(fishCenS pthread ${CMAKE_THREAD_LIBS_INIT} ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} "${LIBRARIES_FROM_REFERENCES}")
+target_link_libraries(fishCenS pthread stdc++fs ${CMAKE_THREAD_LIBS_INIT} ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} "${LIBRARIES_FROM_REFERENCES}")

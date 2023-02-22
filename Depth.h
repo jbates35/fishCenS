@@ -5,13 +5,16 @@
 #include <iostream>
 #include <vector>
 #include <mutex>
+#include <opencv2/opencv.hpp>
 
 using namespace std;
+using namespace cv;
 
 namespace _depth
 {
 	const int UART_DELAY = 500; //ms
 	const int BAUD_RATE = 9600;
+	const double UART_TIMEOUT = 1.0; //in seconds, timeout for reading uart bus
 }
 
 using namespace _depth;
@@ -25,6 +28,8 @@ private:
 	fstream Distdata;       //fstream object to write to log file
 	void GetTime();         //Sets DateTimeStr to current time
 	int _uart;				//handle for UART
+	bool _timeOut;
+	double _startTimer;	
 
 public:
 

@@ -7,13 +7,13 @@
 #include <mutex>
 
 using namespace std;
-namespace _temperature
+namespace Temperature
 {
-	const string TEMP_LOCATION = "/sys/bus/w1/devices/28-00000dfce719/w1_slave";
+	const string TEMP_DEVICE = "28-00000dfce719l";
 	void getTemperature(double& temperature, mutex& lock);  
 }
 
-using namespace _temperature;
+using namespace Temperature;
 
 #endif // TEMPERATURE_H
 

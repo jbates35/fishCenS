@@ -29,9 +29,14 @@ int Depth::init()
 	
 	gpioDelay(UART_DELAY); //Delay to wait for serOpen to return handle
 	
-	if (_uart < 0) {
+	if (_uart < 0)
+	{
 		cout << "Uart Failed\n";
 		return -1;
+	}
+	else
+	{
+		cout << "Uart successfully read.\n";
 	}
 
 //	
@@ -52,11 +57,20 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	int attempts = 0; //Breaks while loop if proper data is not received in 4 attempts
 	int header = 0xff; //Header byte from sensor
 	char data[4] = { 0, 0, 0, 0 }; //Data received from ultrasonic sensor (header, data, data, and checksum bytes)
-
+	_startTimer = getTickCount() / getTickFrequency();
+	_timeOut = false;
+	
 	while (true) {
 		
-		while ((serDataAvailable(_uart) <= 3))  
+		while ((serDataAvailable(_uart) <= 3) && !_timeOut)  
 		{
+			_timeOut = (getTickCount() / getTickFrequency() - _startTimer) > UART_TIMEOUT;
+			
+			if (_timeOut)
+			{
+				cout << "UART Timed out\n";
+				return -1;
+			}
 		}
 		
 		serRead(_uart, data, 4); //Reads bytes in serial data and places in data[] array

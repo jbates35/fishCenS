@@ -10,11 +10,6 @@
 #include <sstream>
 #include <regex>
 
-// Add simple GUI elements
-#define CVUI_DISABLE_COMPILATION_NOTICES
-#define CVUI_IMPLEMENTATION
-#include "cvui.h"
-
 namespace fs = std::filesystem;
 
 FishCenS::FishCenS()
@@ -202,6 +197,7 @@ int FishCenS::init(fcMode mode)
 	if (_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
 		_fishTrackerObj.setMode(ftMode::CALIBRATION);
+		_gui_object.init(_fishTrackerObj);		
 	}
 	
 	//Initiate calibration parameters
@@ -343,11 +339,17 @@ int FishCenS::_draw()
 	{
 		lock_guard<mutex> guard(_baseLock);
 		
+		//Change color spaces of mat to fit BGR
 		cvtColor(_returnMats[2].mat, _returnMats[2].mat, COLOR_GRAY2BGR);
-		cvtColor(_returnMats[0].mat, _returnMats[0].mat, COLOR_GRAY2BGR);		
+		cvtColor(_returnMats[0].mat, _returnMats[0].mat, COLOR_GRAY2BGR);	
+
+		//Create a side by side image of 4 shots	
 		hconcat(_returnMats[0].mat, _returnMats[2].mat, _returnMats[0].mat);					
 		hconcat(_frame, _returnMats[1].mat, _frameDraw);		
 		vconcat(_frameDraw, _returnMats[0].mat, _frameDraw);
+		_gui_object._gui(_frameDraw, _fishTrackerObj);
+
+		//Update with trackbars
 	}
 	
 	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::VIDEO_RECORDER)
@@ -368,7 +370,7 @@ int FishCenS::_draw()
 		putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 	}
 	
-	if (!_frameDraw.empty())
+	if (!_frameDraw.empty() && (_mode != fcMode::CALIBRATION || _mode != fcMode::CALIBRATION_WITH_VIDEO))
 	{
 		imshow("Video", _frameDraw);
 	}

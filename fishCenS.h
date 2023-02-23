@@ -11,6 +11,8 @@
 #include "videoRecord.h"
 #include "Depth.h"
 #include "Temperature.h"
+#include "gui.h"
+#include "imex.h"
 
 using namespace std;
 using namespace cv;
@@ -102,8 +104,6 @@ public:
 	 **/
 	int init(fcMode mode);
 	
-
-	
 	/**
 	 *	@brief Manages runtime of fishCenS object
 	 *	@return 1 if good, -1 if error
@@ -166,21 +166,20 @@ private:
 	int _currentDepth;
 	double _currentTemp;
 	
+	//Trackbars and GUI stuff
+  	gui _gui_object;
+	
 	////////////// METHODS //////////////
-	/**
-	 *	@brief Sets up video frames for showing. Anything tracking is done here
-	 *	@return 1 if good, -1 if error
-	 **/	
+	
+	// Sets up video frames for showing. Anything tracking is done here
+	//	returns 1 if good, -1 if error	
 	int _update();
-
 	static void _updateThreadStart(FishCenS* ptr);
 	
-	/**
-	 *	@brief Shows video frame (might need to be threaded)
-	 *	@return 1 if good, -1 if error
-	 **/		
-	int _draw();
 	
+	// Shows video frame (might need to be threaded)
+	// returns 1 if good, -1 if error
+	int _draw();	
 	static void _drawThreadStart(FishCenS* ptr);
 	
 	void _trackingUpdate(); //takes care of normal tracking, and tracking with video (alpha mode)

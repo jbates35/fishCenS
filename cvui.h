@@ -830,7 +830,7 @@ namespace cvui
 	 \sa endRow()
 	 \sa endColumn()
 	 */
-	void image(cv::Mat& theImage);
+    void image(cv::Mat& theImage);
 
 	/**
 	 Display a checkbox within a `begin*()` and `end*()` block. You can use the state parameter
@@ -1689,7 +1689,7 @@ namespace cvui
 			int aStatus = cvui::iarea(theX, theY, aRect.width, aRect.height);
 
 			switch (aStatus) {
-			case cvui::OUT: render::image(theBlock, aRect, theIdle); break;
+            case cvui::OUT: render::image(theBlock, aRect, theIdle); break;
 			case cvui::OVER: render::image(theBlock, aRect, theOver); break;
 			case cvui::DOWN: render::image(theBlock, aRect, theDown); break;
 			}
@@ -1915,7 +1915,7 @@ namespace cvui
 
 			return size.width;
 		}
-		
+		;
 
 		void buttonLabel(cvui_block_t& theBlock, int theState, cv::Rect theRect, const cv::String& theLabel, cv::Size& theTextSize) {
 			cv::Point aPos(theRect.x + theRect.width / 2 - theTextSize.width / 2, theRect.y + theRect.height / 2 + theTextSize.height / 2);

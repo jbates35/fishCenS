@@ -23,6 +23,8 @@ videoRecord.cpp videoRecord.h
 led.cpp led.h
 Temperature.cpp Temperature.h
 Depth.cpp Depth.h
+imex.cpp imex.h
+gui.cpp gui.h
 )
 
 target_include_directories(fishCenS PRIVATE .)

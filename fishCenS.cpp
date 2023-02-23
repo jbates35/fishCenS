@@ -45,8 +45,11 @@ int FishCenS::run()
 {
 	while (_returnKey != 27)
 	{
-		update();
-		draw();
+		thread updateThread(&FishCenS::_updateThreadStart, this);
+		thread drawThread(&FishCenS::_drawThreadStart, this);
+		
+		updateThread.join();
+		drawThread.join();
 	}
 	
 	//Temporary - save log file
@@ -208,6 +211,7 @@ int FishCenS::init(fcMode mode)
 	}
 	
 	//Initiate sensors - including serial for ultrasonic
+	_depthSerialOpen = _depthObj.init();
 	_currentDepth = -1;
 	_currentTemp = -1;
 	
@@ -220,7 +224,7 @@ int FishCenS::init(fcMode mode)
 }
 
 
-int FishCenS::update()
+int FishCenS::_update()
 {
 	
 	
@@ -232,26 +236,28 @@ int FishCenS::update()
 		if ((_millis() - _timers["tempTimer"]) >= TEMPERATURE_PERIOD)
 		{	
 			_timers["tempTimer"] = _millis();
-			Temperature::getTemperature(_currentTemp, _baseLock);
+			//Temperature::getTemperature(_currentTemp, _baseLock);
+			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_baseLock));
+			_threadVector.push_back(move(temperatureThread));	
 			
 			_ledState = !_ledState;
 			gpioWrite(LED_PIN, _ledState);			
 		}
 		
-//		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
-//		{	
-//			_timers["depthTimer"] = _millis();	
-//			
-//			if (depthObj.init() > 0)
-//			{				
-//				depthObj.getDepth(_currentDepth, _baseLock);
-//				
-//				
-//				//			std::thread depthThread(&Depth::getDepth, depth, ref(_currentDepth), ref(_baseLock));
-//				//			_threadVector.push_back(move(depthThread));
-//			}
-//		
-//		}
+		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
+		{	
+			_timers["depthTimer"] = _millis();	
+			
+			if (_depthSerialOpen > 0)
+			{				
+				//_depthObj.getDepth(_currentDepth, _baseLock);
+				
+				
+				std::thread depthThread(&Depth::getDepth, ref(_depthObj), ref(_currentDepth), ref(_baseLock));
+				depthThread.detach();
+			}
+		
+		}
 	}
 
 	
@@ -319,10 +325,8 @@ int FishCenS::update()
 }
 
 
-int FishCenS::draw()
-{
-	lock_guard<mutex> guard(_baseLock);
-	
+int FishCenS::_draw()
+{	
 	if (_millis() - _timers["drawTime"] < DRAW_PERIOD)
 	{
 		return -1;
@@ -330,19 +334,40 @@ int FishCenS::draw()
 	
 	_timers["drawTime"] = _millis();
 	
-	//Get frameDraw prepared
-	if((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
+	Mat localFrameDraw, localFrame;
+	vector<_ft::returnMatsStruct> localReturnMats;
+	
 	{
-		cvtColor(_returnMats[2].mat, _returnMats[2].mat, COLOR_GRAY2BGR);
-		cvtColor(_returnMats[0].mat, _returnMats[0].mat, COLOR_GRAY2BGR);		
-		hconcat(_returnMats[0].mat, _returnMats[2].mat, _returnMats[0].mat);					
-		hconcat(_frame, _returnMats[1].mat, _frameDraw);		
-		vconcat(_frameDraw, _returnMats[0].mat, _frameDraw);
+		lock_guard<mutex> guard(_baseLock);
+		
+		_frame.copyTo(localFrame);
+		if ((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
+		{
+			for (auto matStruct : _returnMats)
+			{
+				_ft::returnMatsStruct tempStruct;
+			
+				tempStruct.colorMode = matStruct.colorMode;
+				tempStruct.title = matStruct.title;
+				matStruct.mat.copyTo(tempStruct.mat);
+				_returnMats.push_back(tempStruct);
+			}
+		}
+	}
+	
+	//Get frameDraw prepared
+	if ((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
+	{
+		cvtColor(localReturnMats[2].mat, localReturnMats[2].mat, COLOR_GRAY2BGR);
+		cvtColor(localReturnMats[0].mat, localReturnMats[0].mat, COLOR_GRAY2BGR);		
+		hconcat(localReturnMats[0].mat, localReturnMats[2].mat, localReturnMats[0].mat);					
+		hconcat(localFrame, localReturnMats[1].mat, localFrameDraw);		
+		vconcat(localFrameDraw, localReturnMats[0].mat, localFrameDraw);
 	}
 	
 	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::VIDEO_RECORDER)
 	{		
-		_frame.copyTo(_frameDraw);
+		_frame.copyTo(localFrameDraw);
 	}
 	
 	//With tracking mode, we need sensor information (Maybe need this for calibration mode w video too?)
@@ -352,21 +377,19 @@ int FishCenS::draw()
 		string depthStr = "Depth: " + to_string(_currentDepth);
 		string tempStr = "Temperature: " + to_string(_currentTemp);
 		
-		putText(_frameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
-		putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		putText(localFrameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		putText(localFrameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 	}
 	
 	if (!_frameDraw.empty())
 	{
-		imshow("Video", _frameDraw);
+		imshow("Video", localFrameDraw);
 	}
 	_returnKey = waitKey(1);
 	
 	
 	return 1;
 }
-
-
 
 
 
@@ -648,5 +671,13 @@ int FishCenS::_saveLogFile()
 
 
 
+void FishCenS::_updateThreadStart(FishCenS* ptr)
+{
+	ptr->_update();
+}
 
 
+void FishCenS::_drawThreadStart(FishCenS* ptr)
+{
+	ptr->_draw();
+}

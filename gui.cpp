@@ -1,13 +1,15 @@
 #include "gui.h"
+
 #define CVUI_IMPLEMENTATION
+#define CVUI_DISABLE_COMPILATION_NOTICES
 #include "cvui.h"
+
 #define WINDOW1_NAME "Windows 1"
 #define WINDOW2_NAME "Windows 2"
 #define SIZE Size(1920,1080)
 #define IMG_SIZE Size(1422,847)
 #define TEXT_SIZE 0.55
 #define TEXT_COLOR 0xffffff
-
 
 void MatType( Mat inputMat )
 {
@@ -31,11 +33,17 @@ void MatType( Mat inputMat )
     cout << "Mat is of type " << r << " and should be accessed with " << a << endl;
 
 }
-gui::gui(FishTracker fishTrackerObj)
+
+gui::gui()
+{
+}
+
+int gui::init(FishTracker& fishTrackerObj)
 {
     frame1 = cv::Mat(SIZE.height, SIZE.width, CV_8UC3);
     cv::namedWindow(WINDOW1_NAME);
     cvui::init(WINDOW1_NAME);
+    
     // Initilize values
     erode.value = fishTrackerObj.getErode();
     dialate.value = fishTrackerObj.getDilate();
@@ -61,11 +69,10 @@ gui::gui(FishTracker fishTrackerObj)
     hsv_max.min = Scalar(0,0,0);
     hsv_max.max = Scalar(255,255,255);
 
-
-
+    return 1;
 }
 
-void gui::_gui(Mat img,FishTracker &fishTrackerObj){
+void gui::_gui(Mat& img,FishTracker &fishTrackerObj){
 
 
     cvui::context(WINDOW1_NAME);
@@ -142,10 +149,11 @@ void gui::_gui(Mat img,FishTracker &fishTrackerObj){
 
         // TO do -> add Export button -> add date and time to .json as default
         if (cvui::button(frame1, 1625, 670,100, 30, "EXPORT"))
-                imex_object.Export(fishTrackerObj,LOGGER_PATH);
+                imex_object.Export(fishTrackerObj, _gui::LOGGER_PATH);
 
     cvui::endColumn();
     cvui::update(WINDOW1_NAME);
+    
     cv::imshow(WINDOW1_NAME, frame1);
 
 

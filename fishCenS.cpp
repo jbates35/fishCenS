@@ -6,7 +6,6 @@
 #include <cstdio>
 #include <pigpio.h>
 #include <string>
-#include <dirent.h> //Probably don't need this with filesystem
 #include <filesystem>
 #include <sstream>
 #include <regex>
@@ -204,7 +203,8 @@ int FishCenS::init(fcMode mode)
 	//Turn LED light on 
 	if (_mode == fcMode::TRACKING || _mode == fcMode::CALIBRATION || _mode == fcMode::VIDEO_RECORDER)
 	{
-		gpioWrite(LED_PIN, 1);		
+		_ledState = true;
+		gpioWrite(LED_PIN, _ledState);		
 	}
 	
 	//Initiate sensors - including serial for ultrasonic
@@ -227,28 +227,31 @@ int FishCenS::update()
 	if (_mode == fcMode::TRACKING)
 	{					
 		//Start depth sensors thread every DEPTH_PERIOD
-		Depth depthObj;
+//		Depth depthObj;
 		
-//		if ((_millis() - _timers["tempTimer"]) >= TEMPERATURE_PERIOD)
-//		{	
-//			_timers["tempTimer"] = _millis();
-//			Temperature::getTemperature(_currentTemp, _baseLock);
-//		}
-		
-		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
+		if ((_millis() - _timers["tempTimer"]) >= TEMPERATURE_PERIOD)
 		{	
-			_timers["depthTimer"] = _millis();	
+			_timers["tempTimer"] = _millis();
+			Temperature::getTemperature(_currentTemp, _baseLock);
 			
-			if (depthObj.init() > 0)
-			{				
-				depthObj.getDepth(_currentDepth, _baseLock);
-				
-				
-				//			std::thread depthThread(&Depth::getDepth, depth, ref(_currentDepth), ref(_baseLock));
-				//			_threadVector.push_back(move(depthThread));
-			}
-		
+			_ledState = !_ledState;
+			gpioWrite(LED_PIN, _ledState);			
 		}
+		
+//		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
+//		{	
+//			_timers["depthTimer"] = _millis();	
+//			
+//			if (depthObj.init() > 0)
+//			{				
+//				depthObj.getDepth(_currentDepth, _baseLock);
+//				
+//				
+//				//			std::thread depthThread(&Depth::getDepth, depth, ref(_currentDepth), ref(_baseLock));
+//				//			_threadVector.push_back(move(depthThread));
+//			}
+//		
+//		}
 	}
 
 	

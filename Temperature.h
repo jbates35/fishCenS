@@ -9,7 +9,7 @@
 using namespace std;
 namespace Temperature
 {
-	const string TEMP_DEVICE = "28-00000dfce719l";
+	const string TEMP_DEVICE = "28-00000dfce719";
 	void getTemperature(double& temperature, mutex& lock);  
 }
 

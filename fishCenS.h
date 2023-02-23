@@ -23,7 +23,7 @@ namespace _fc
 	const int VIDEO_HEIGHT	= 432; //px
 	
 	//Gpio pins
-	const int LED_PIN	= 21; //Main LED (big flashy flash)
+	const int LED_PIN	= 13; //Main LED (big flashy flash)
 	
 	const string LOGGER_PATH = "./logData"; // Folder path for Logging data
 	
@@ -145,6 +145,7 @@ private:
 	PiCamera _cam;
 	Mat _frame, _frameDraw;
 	vector<_ft::returnMatsStruct> _returnMats; //Mats that are processed from the tracking and inrange algs
+	bool _ledState;
 	
 	//Video recording
 	vrMode _videoRecordState;

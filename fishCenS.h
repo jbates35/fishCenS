@@ -23,7 +23,7 @@ namespace _fc
 	const int VIDEO_HEIGHT	= 432; //px
 	
 	//Gpio pins
-	const int LED_PIN	= 21; //Main LED (big flashy flash)
+	const int LED_PIN	= 13; //Main LED (big flashy flash)
 	
 	const string LOGGER_PATH = "./logData"; // Folder path for Logging data
 	
@@ -36,8 +36,8 @@ namespace _fc
 	const double DRAW_FPS = 30; //FPS of opencv imshow
 	const double DRAW_PERIOD = 1000 / DRAW_FPS; //Period of opencv imshow in milliseconds
 	
-	const double DEPTH_PERIOD = 100; //2000 //ms
-	const double TEMPERATURE_SENSOR = 2000; //ms
+	const double DEPTH_PERIOD = 2000; //2000 //ms
+	const double TEMPERATURE_PERIOD = 2000; //ms
 	
 	const int SLEEP_TIMER	= 300; //milliseconds
 
@@ -102,17 +102,7 @@ public:
 	 **/
 	int init(fcMode mode);
 	
-	/**
-	 *	@brief Sets up video frames for showing. Anything tracking is done here
-	 *	@return 1 if good, -1 if error
-	 **/	
-	int update();
 
-	/**
-	 *	@brief Shows video frame (might need to be threaded)
-	 *	@return 1 if good, -1 if error
-	 **/		
-	int draw();
 	
 	/**
 	 *	@brief Manages runtime of fishCenS object
@@ -145,6 +135,7 @@ private:
 	PiCamera _cam;
 	Mat _frame, _frameDraw;
 	vector<_ft::returnMatsStruct> _returnMats; //Mats that are processed from the tracking and inrange algs
+	bool _ledState;
 	
 	//Video recording
 	vrMode _videoRecordState;
@@ -170,10 +161,28 @@ private:
 	map<string, double> _timers;
 	
 	//Sensors stuff
+	Depth _depthObj;
+	int _depthSerialOpen;
 	int _currentDepth;
-	int _currentTemp;
+	double _currentTemp;
 	
 	////////////// METHODS //////////////
+	/**
+	 *	@brief Sets up video frames for showing. Anything tracking is done here
+	 *	@return 1 if good, -1 if error
+	 **/	
+	int _update();
+
+	static void _updateThreadStart(FishCenS* ptr);
+	
+	/**
+	 *	@brief Shows video frame (might need to be threaded)
+	 *	@return 1 if good, -1 if error
+	 **/		
+	int _draw();
+	
+	static void _drawThreadStart(FishCenS* ptr);
+	
 	void _trackingUpdate(); //takes care of normal tracking, and tracking with video (alpha mode)
 	void _calibrateUpdate();
 	

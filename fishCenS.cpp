@@ -6,7 +6,6 @@
 #include <cstdio>
 #include <pigpio.h>
 #include <string>
-#include <dirent.h> //Probably don't need this with filesystem
 #include <filesystem>
 #include <sstream>
 #include <regex>
@@ -46,8 +45,14 @@ int FishCenS::run()
 {
 	while (_returnKey != 27)
 	{
-		update();
-		draw();
+		_update();
+		_draw();
+		
+//		thread updateThread(&FishCenS::_updateThreadStart, this);
+//		thread drawThread(&FishCenS::_drawThreadStart, this);
+//		
+//		updateThread.join();
+//		drawThread.join();
 	}
 	
 	//Temporary - save log file
@@ -204,10 +209,12 @@ int FishCenS::init(fcMode mode)
 	//Turn LED light on 
 	if (_mode == fcMode::TRACKING || _mode == fcMode::CALIBRATION || _mode == fcMode::VIDEO_RECORDER)
 	{
-		gpioWrite(LED_PIN, 1);		
+		_ledState = true;
+		gpioWrite(LED_PIN, _ledState);		
 	}
 	
 	//Initiate sensors - including serial for ultrasonic
+	_depthSerialOpen = _depthObj.init();
 	_currentDepth = -1;
 	_currentTemp = -1;
 	
@@ -220,23 +227,40 @@ int FishCenS::init(fcMode mode)
 }
 
 
-int FishCenS::update()
+int FishCenS::_update()
 {
 	
-	//Start depth sensors thread every DEPTH_PERIOD
-	Depth depthObj;
 	
-	if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
-	{	
-		_timers["depthTimer"] = _millis();
+	if (_mode == fcMode::TRACKING)
+	{					
+		//Start depth sensors thread every DEPTH_PERIOD
+//		Depth depthObj;
 		
-		if (depthObj.init() > 0)
-		{
-			depthObj.getDepth(_currentDepth, _baseLock);
-//			std::thread depthThread(&Depth::getDepth, depth, ref(_currentDepth), ref(_baseLock));
-//			_threadVector.push_back(move(depthThread));
+		if ((_millis() - _timers["tempTimer"]) >= TEMPERATURE_PERIOD)
+		{	
+			_timers["tempTimer"] = _millis();
+			//Temperature::getTemperature(_currentTemp, _baseLock);
+			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_baseLock));
+			_threadVector.push_back(move(temperatureThread));	
+			
+			_ledState = !_ledState;
+			gpioWrite(LED_PIN, _ledState);			
 		}
 		
+		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
+		{	
+			_timers["depthTimer"] = _millis();	
+			
+			if (_depthSerialOpen > 0)
+			{				
+				//_depthObj.getDepth(_currentDepth, _baseLock);
+				
+				
+				std::thread depthThread(&Depth::getDepth, ref(_depthObj), ref(_currentDepth), ref(_baseLock));
+				depthThread.detach();
+			}
+		
+		}
 	}
 
 	
@@ -304,9 +328,8 @@ int FishCenS::update()
 }
 
 
-int FishCenS::draw()
-{
-	lock_guard<mutex> guard(_baseLock);
+int FishCenS::_draw()
+{	
 	
 	if (_millis() - _timers["drawTime"] < DRAW_PERIOD)
 	{
@@ -316,8 +339,10 @@ int FishCenS::draw()
 	_timers["drawTime"] = _millis();
 	
 	//Get frameDraw prepared
-	if((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
+	if ((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
 	{
+		lock_guard<mutex> guard(_baseLock);
+		
 		cvtColor(_returnMats[2].mat, _returnMats[2].mat, COLOR_GRAY2BGR);
 		cvtColor(_returnMats[0].mat, _returnMats[0].mat, COLOR_GRAY2BGR);		
 		hconcat(_returnMats[0].mat, _returnMats[2].mat, _returnMats[0].mat);					
@@ -326,7 +351,9 @@ int FishCenS::draw()
 	}
 	
 	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::VIDEO_RECORDER)
-	{		
+	{	
+		lock_guard<mutex> guard(_baseLock);
+		
 		_frame.copyTo(_frameDraw);
 	}
 	
@@ -350,8 +377,6 @@ int FishCenS::draw()
 	
 	return 1;
 }
-
-
 
 
 
@@ -633,5 +658,13 @@ int FishCenS::_saveLogFile()
 
 
 
+void FishCenS::_updateThreadStart(FishCenS* ptr)
+{
+	ptr->_update();
+}
 
 
+void FishCenS::_drawThreadStart(FishCenS* ptr)
+{
+	ptr->_draw();
+}

@@ -45,11 +45,14 @@ int FishCenS::run()
 {
 	while (_returnKey != 27)
 	{
-		thread updateThread(&FishCenS::_updateThreadStart, this);
-		thread drawThread(&FishCenS::_drawThreadStart, this);
+		_update();
+		_draw();
 		
-		updateThread.join();
-		drawThread.join();
+//		thread updateThread(&FishCenS::_updateThreadStart, this);
+//		thread drawThread(&FishCenS::_drawThreadStart, this);
+//		
+//		updateThread.join();
+//		drawThread.join();
 	}
 	
 	//Temporary - save log file
@@ -327,6 +330,7 @@ int FishCenS::_update()
 
 int FishCenS::_draw()
 {	
+	
 	if (_millis() - _timers["drawTime"] < DRAW_PERIOD)
 	{
 		return -1;
@@ -334,40 +338,23 @@ int FishCenS::_draw()
 	
 	_timers["drawTime"] = _millis();
 	
-	Mat localFrameDraw, localFrame;
-	vector<_ft::returnMatsStruct> localReturnMats;
-	
-	{
-		lock_guard<mutex> guard(_baseLock);
-		
-		_frame.copyTo(localFrame);
-		if ((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
-		{
-			for (auto matStruct : _returnMats)
-			{
-				_ft::returnMatsStruct tempStruct;
-			
-				tempStruct.colorMode = matStruct.colorMode;
-				tempStruct.title = matStruct.title;
-				matStruct.mat.copyTo(tempStruct.mat);
-				_returnMats.push_back(tempStruct);
-			}
-		}
-	}
-	
 	//Get frameDraw prepared
 	if ((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
 	{
-		cvtColor(localReturnMats[2].mat, localReturnMats[2].mat, COLOR_GRAY2BGR);
-		cvtColor(localReturnMats[0].mat, localReturnMats[0].mat, COLOR_GRAY2BGR);		
-		hconcat(localReturnMats[0].mat, localReturnMats[2].mat, localReturnMats[0].mat);					
-		hconcat(localFrame, localReturnMats[1].mat, localFrameDraw);		
-		vconcat(localFrameDraw, localReturnMats[0].mat, localFrameDraw);
+		lock_guard<mutex> guard(_baseLock);
+		
+		cvtColor(_returnMats[2].mat, _returnMats[2].mat, COLOR_GRAY2BGR);
+		cvtColor(_returnMats[0].mat, _returnMats[0].mat, COLOR_GRAY2BGR);		
+		hconcat(_returnMats[0].mat, _returnMats[2].mat, _returnMats[0].mat);					
+		hconcat(_frame, _returnMats[1].mat, _frameDraw);		
+		vconcat(_frameDraw, _returnMats[0].mat, _frameDraw);
 	}
 	
 	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::VIDEO_RECORDER)
-	{		
-		_frame.copyTo(localFrameDraw);
+	{	
+		lock_guard<mutex> guard(_baseLock);
+		
+		_frame.copyTo(_frameDraw);
 	}
 	
 	//With tracking mode, we need sensor information (Maybe need this for calibration mode w video too?)
@@ -377,13 +364,13 @@ int FishCenS::_draw()
 		string depthStr = "Depth: " + to_string(_currentDepth);
 		string tempStr = "Temperature: " + to_string(_currentTemp);
 		
-		putText(localFrameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
-		putText(localFrameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		putText(_frameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 	}
 	
 	if (!_frameDraw.empty())
 	{
-		imshow("Video", localFrameDraw);
+		imshow("Video", _frameDraw);
 	}
 	_returnKey = waitKey(1);
 	

@@ -25,6 +25,7 @@ Temperature.cpp Temperature.h
 Depth.cpp Depth.h
 )
 
+target_include_directories(fishCenS PRIVATE .)
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
     if (NOT CMAKE_BUILD_TYPE)
         set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)

@@ -275,9 +275,14 @@ void LibcameraApp::StartCamera()
 
 
     // Enable Autofocus
-    controls_.set(controls::AfMode, libcamera::controls::AfModeContinuous);
-    controls_.set(controls::AfRange, libcamera::controls::AfRangeNormal);
-    controls_.set(controls::AfSpeed, libcamera::controls::AfSpeedNormal);
+//    controls_.set(controls::AfMode, libcamera::controls::AfModeContinuous);
+//    controls_.set(controls::AfRange, libcamera::controls::AfRangeNormal);
+//    controls_.set(controls::AfSpeed, libcamera::controls::AfSpeedNormal);
+
+    // Enable Manual Focus
+    controls_.set(controls::AfMode, libcamera::controls::AfModeManual);
+    controls_.set(libcamera::controls::LensPosition, 1.5);
+
 
 
 		// When starting a viewfinder or video stream in AF "auto" mode,

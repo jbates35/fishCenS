@@ -138,6 +138,7 @@ private:
 	bool _ledState;
 	
 	//Video recording
+	VideoRecord _vidRecord;
 	vrMode _videoRecordState;
 	int _videoWidth;
 	int _videoHeight;
@@ -151,7 +152,7 @@ private:
 	
 	//Mutex for threadlocking/threading
 	vector<thread> _threadVector;
-	mutex _baseLock;
+	mutex _baseLock, _sensorLock;
 	
 	//Logger stuff
 	vector<string> _fcLogger;
@@ -182,6 +183,9 @@ private:
 	int _draw();	
 	static void _drawThreadStart(FishCenS* ptr);
 	
+	void _videoRun();
+	static void _videoRunThread(FishCenS* ptr);
+
 	void _trackingUpdate(); //takes care of normal tracking, and tracking with video (alpha mode)
 	void _calibrateUpdate();
 	

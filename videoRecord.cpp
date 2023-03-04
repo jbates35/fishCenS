@@ -6,6 +6,97 @@ VideoRecord::VideoRecord()
 
 VideoRecord::~VideoRecord()
 { 
+	if(_vrStatus != vrMode::VIDEO_OFF)
+	{
+		close();
+	}
+}
+
+void VideoRecord::run(Mat& frame, mutex& lock)
+{		
+	lock_guard<mutex> guard(lock);	
+	
+	//Exit function if video isn't open
+	if (!_video.isOpened())
+	{
+		cout << "Video is not opened\n";
+		_log("Video is not open");
+		return;
+	}
+	
+	//Mutex and record frame	
+	Mat writeFrame;
+	frame.copyTo(writeFrame);	
+	_video.write(writeFrame);	
+		
+	//Update timer information
+	if (_frameTimes.size() > MAX_DATA_SIZE)
+	{
+		_frameTimes.erase(_frameTimes.begin());
+	}
+	
+	_frameTimes.push_back(getTickCount() / getTickFrequency() - _frameTimer);
+	_frameTimer = getTickCount() / getTickFrequency();
+	
+	//Update frame count
+	_frameCount++;
+}
+
+void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* = NULL */)
+{	
+	_vrStatus = vrMode::VIDEO_SETUP;
+
+	//Mutex and record frame
+	lock_guard<mutex> guard(lock);
+	
+	//Setup filepath and filenames, first
+	if (filePath == "")
+	{
+		_filePath = "./";
+	}
+	else
+	{
+		_filePath = filePath;
+		
+		//Append slash if there isn't one at end of string
+		if (_filePath.at(_filePath.size() - 1) != '/')
+		{
+			_filePath += '/';
+		}
+	}
+	
+	//Make timestamp filename
+	_fileName = _getTime();
+
+	//Create video parameters
+	int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
+	bool isColor = (frame.type() == CV_8UC3);
+	Size videoSize = frame.size();
+
+	_log("Starting video...", true);
+	_log("\t>>Video name is " + _fileName, true);
+	_log("\t>>Theoretical frame rate is " + to_string(fps) + "fps", true);
+	_log("\t>>Theoretical frame length is " + to_string((double) 1000 / fps) + "ms", true);
+	_log("\t>>Camera size is <" + to_string(videoSize.width) + ", " + to_string(videoSize.height) + "> px", true);
+	
+	//Start video timer
+	_startTime = getTickCount() / getTickFrequency();
+	
+	//Start frame counter and frame time
+	_frameCount = 0;
+	_frameTimer = getTickCount() / getTickFrequency();
+	
+	//Initailize video
+	_video.open(_filePath + _fileName + ".avi", codec, fps, videoSize, isColor);
+	
+	_vrStatus = vrMode::VIDEO_ON;
+	
+}
+
+void VideoRecord::close()
+{
+	_vrStatus = vrMode::VIDEO_OFF;
+
 	//Save video file to file
 	_video.release();
 
@@ -41,84 +132,13 @@ VideoRecord::~VideoRecord()
 		dataFile << str;
 	}
 
-	dataFile.close();	
+	dataFile.close();
+
 }
 
-void VideoRecord::run(Mat& frame, mutex& lock)
+vrMode VideoRecord::isOpen()
 {
-		
-	lock_guard<mutex> guard(lock);	
-	
-	//Exit function if video isn't open
-	if (!_video.isOpened())
-	{
-		cout << "Video is not opened\n";
-		_log("Video is not open");
-		return;
-	}
-	
-	//Mutex and record frame	
-	Mat writeFrame;
-	frame.copyTo(writeFrame);	
-	_video.write(writeFrame);	
-		
-	//Update timer information
-	if (_frameTimes.size() > MAX_DATA_SIZE)
-	{
-		_frameTimes.erase(_frameTimes.begin());
-	}
-	
-	_frameTimes.push_back(getTickCount() / getTickFrequency() - _frameTimer);
-	_frameTimer = getTickCount() / getTickFrequency();
-	
-	//Update frame count
-	_frameCount++;
-}
-
-void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* = NULL */)
-{	
-	//Mutex and record frame
-	lock_guard<mutex> guard(lock);
-	
-	//Setup filepath and filenames, first
-	if (filePath == "")
-	{
-		_filePath = "./";
-	}
-	else
-	{
-		_filePath = filePath;
-		
-		//Append slash if there isn't one at end of string
-		if (_filePath.at(_filePath.size() - 1) != '/')
-		{
-			_filePath += '/';
-		}
-	}
-	
-	//Make timestamp filename
-	_fileName = _getTime();
-
-	//Create video parameters
-	int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
-	bool isColor = (frame.type() == CV_8UC3);
-	Size videoSize = frame.size();
-
-	_log("Starting video...", true);
-	_log("\t>>Theoretical frame rate is " + to_string(fps) + "fps", true);
-	_log("\t>>Theoretical frame length is " + to_string((double) 1000 / fps) + "ms", true);
-	_log("\t>>Camera size is <" + to_string(videoSize.width) + ", " + to_string(videoSize.height) + "> px", true);
-	
-	//Start video timer
-	_startTime = getTickCount() / getTickFrequency();
-	
-	//Start frame counter and frame time
-	_frameCount = 0;
-	_frameTimer = getTickCount() / getTickFrequency();
-	
-	//Initailize video
-	_video.open(_filePath + _fileName + ".avi", codec, fps, videoSize, isColor);
-	
+	return _vrStatus;
 }
 
 std::string VideoRecord::_getTime()

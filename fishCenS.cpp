@@ -236,7 +236,7 @@ int FishCenS::_update()
 		{	
 			_timers["tempTimer"] = _millis();
 			//Temperature::getTemperature(_currentTemp, _baseLock);
-			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_baseLock));
+			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_sensorLock));
 			_threadVector.push_back(move(temperatureThread));	
 			
 			_ledState = !_ledState;
@@ -252,7 +252,7 @@ int FishCenS::_update()
 				//_depthObj.getDepth(_currentDepth, _baseLock);
 				
 				
-				std::thread depthThread(&Depth::getDepth, ref(_depthObj), ref(_currentDepth), ref(_baseLock));
+				std::thread depthThread(&Depth::getDepth, ref(_depthObj), ref(_currentDepth), ref(_sensorLock));
 				depthThread.detach();
 			}
 		
@@ -310,6 +310,19 @@ int FishCenS::_update()
 		std::thread trackingThread(&FishTracker::run, _fishTrackerObj, ref(_frame), ref(_returnMats), ref(_baseLock), ref(_fishCount), ref(_ROIRects));
 		_threadVector.push_back(move(trackingThread));		
 	}
+
+	//Add video record
+	if(_returnKey == 'r' || _returnKey == 'R')
+	{
+		_returnKey = '\0';
+
+		double vidFPS = 30.0;
+		_vidRecord.init(_frame, _baseLock, vidFPS, TEST_VIDEO_PATH);
+
+		// thread videoThread(&FishCenS::_videoRunThread, this);
+		// videoThread.detach();
+	}
+
 		
 	//All threads need to be joined before drawing (or looping back into update)
 	for (thread & thr : _threadVector)
@@ -370,6 +383,17 @@ int FishCenS::_draw()
 		putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 	}
 	
+	//DELME WHEN WORKING 
+	if(_vidRecord.isOpen() == vrMode::VIDEO_ON && _mode == fcMode::VIDEO_RECORDER)
+	{
+		_vidRecord.run(_frame, _baseLock);
+	}
+
+	if(_returnKey == 's' || _returnKey == 'S')
+	{
+		_vidRecord.close();
+	}
+
 	if (!_frameDraw.empty() && (_mode != fcMode::CALIBRATION || _mode != fcMode::CALIBRATION_WITH_VIDEO))
 	{
 		imshow("Video", _frameDraw);
@@ -397,6 +421,21 @@ void FishCenS::_videoRecordUpdate()
 {
 }
 
+void FishCenS::_videoRun()
+{
+	double vidTimer = getTickCount()/getTickFrequency();
+
+	while(_returnKey != 's' || _returnKey != 'S')
+	{
+		if(getTickCount()/getTickFrequency() - vidTimer >= 1/30)
+		{	
+			vidTimer = getTickCount()/getTickFrequency();
+			_vidRecord.run(_frame, _baseLock);
+		}
+	}
+
+	_vidRecord.close();
+}
 
 int FishCenS::_getVideoEntry(string& selectionStr)
 {
@@ -669,4 +708,9 @@ void FishCenS::_updateThreadStart(FishCenS* ptr)
 void FishCenS::_drawThreadStart(FishCenS* ptr)
 {
 	ptr->_draw();
+}
+
+void FishCenS::_videoRunThread(FishCenS* ptr)
+{
+	ptr->_videoRun();
 }

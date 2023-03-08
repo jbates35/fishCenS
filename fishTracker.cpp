@@ -126,24 +126,47 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	//Change Color to HSV for easier thresholding
 	cvtColor(frameRaw, frameProcessed, COLOR_BGR2HSV);
 	
-	//Erode and dilate elements for eroding and dilating image
-	Mat erodeElement = getStructuringElement(MORPH_RECT, _erodeSize);
-	Mat dilateElement = getStructuringElement(MORPH_RECT, _dilateSize);
+//	//Erode and dilate elements for eroding and dilating image
+//	Mat erodeElement = getStructuringElement(MORPH_RECT, _erodeSize);
+//	Mat dilateElement = getStructuringElement(MORPH_RECT, _dilateSize);
+//	
+//	//Now erode and dilate image so that contours may be picked up a bit more (really, washes away unused thresholded parts)
+//	for (int i = 0; i < _erodeAmount; i++)
+//	{
+//		erode(frameProcessed, frameProcessed, erodeElement);
+//	}
+//	
+//	for (int i = 0; i < _dilateAmount; i++)
+//	{	
+//		dilate(frameProcessed, frameProcessed, dilateElement);			
+//	}
+//	
+//	
+//	//Threshold the image for finding contours
+//	inRange(frameProcessed, _rangeMin, _rangeMax, frameProcessed);
+//			
+
+
 	
-	//Now erode and dilate image so that contours may be picked up a bit more (really, washes away unused thresholded parts)
-	for (int i = 0; i < _erodeAmount; i++)
-	{
-		erode(frameProcessed, frameProcessed, erodeElement);
-	}
+	inRange(frameProcessed, Scalar(10, 0, 0), Scalar(180, 240, 240), frameProcessed);
 	
-	for (int i = 0; i < _dilateAmount; i++)
-	{	
-		dilate(frameProcessed, frameProcessed, dilateElement);			
-	}
+	//HACKNSLASH - REMOVE THIS
+	Mat erodeElement = getStructuringElement(MORPH_ELLIPSE, Size(2, 2));
+	erode(frameProcessed, frameProcessed, erodeElement);
+	erode(frameProcessed, frameProcessed, erodeElement);
+	erode(frameProcessed, frameProcessed, erodeElement);
+	erode(frameProcessed, frameProcessed, erodeElement);
+	erode(frameProcessed, frameProcessed, erodeElement);
+	erode(frameProcessed, frameProcessed, erodeElement);
+	erode(frameProcessed, frameProcessed, erodeElement);
+	erode(frameProcessed, frameProcessed, erodeElement);
 	
-	//Threshold the image for finding contours
-	inRange(frameProcessed, _rangeMin, _rangeMax, frameProcessed);
-			
+	Mat dilateElement = getStructuringElement(MORPH_ELLIPSE, Size(4, 4));
+	dilate(frameProcessed, frameProcessed, dilateElement);
+	dilate(frameProcessed, frameProcessed, dilateElement);
+	dilate(frameProcessed, frameProcessed, dilateElement);
+	dilate(frameProcessed, frameProcessed, dilateElement);
+	
 	//Image is ready to find contours, so first create variables we can find contours in
 	vector<vector<Point>> contours;
 	

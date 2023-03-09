@@ -116,9 +116,18 @@ public:
 	 **/		
 	char getReturnKey();
 
+	/**
+	 ** @brief Turns testing mode on or off to show important parameters on screen
+	 ** @param isTesting true for testing, false to turn testing off
+	 ***/
+	void setTesting(bool isTesting);
+
 private:
 	////////////// PARAMTERS/OBJS //////////////
 	
+	//For testing mode
+	bool _testing;
+
 	//Mode of fishCenS defined by initiation
 	fcMode _mode;
 	
@@ -201,5 +210,5 @@ private:
 	static double _millis(); //Returns ms to be used with getTickCount/getTickFreq
 	void _log(string data, bool outputToScreen = false); //Writes to log vector, outputs to screen if need be
 	int _saveLogFile(); //Ensures data folder exists and saves log file there 
-	
+	int _showRectInfo(Mat& im); // Show rects for ROI, and shows info about them	
 };

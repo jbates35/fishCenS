@@ -12,13 +12,14 @@ FishTracker::FishTracker()
 
 FishTracker::~FishTracker()
 {
+	cout << "\tNOTE: FishTracker destroyed\n";
 }
 
 
 bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock, int& fishCount, vector<Rect>& ROIRects)
-{
+{		
 	//Make new Mat so it can be used without needing mutex
-	Mat frameRaw, frameProcessed, frameMask;
+	Mat frameRaw, frameNoBG, frameProcessed, frameMask, frameGrayscale;
 	frameRaw = Mat::zeros(_frameSize, CV_8UC3);
 	
 	{
@@ -38,39 +39,24 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 		//First, get mask of image...
 		_pBackSub->apply(im, frameMask);
 
+		im.copyTo(frameRaw);
+
 		//Copy only parts of the image that moved
-		im.copyTo(frameRaw, frameMask);
-	
-		//Returns Mats if need be
-		if (_programMode == ftMode::CALIBRATION)
-		{	
-			//Make struct for storing in returnMats
-			returnMatsStruct tempMatStruct;
+		im.copyTo(frameNoBG, frameMask);
 		
-			//Mask mat
-			tempMatStruct.title = "MASK";
-			tempMatStruct.colorMode = imgMode::BINARY;
-			frameMask.copyTo(tempMatStruct.mat);
-			returnMats.push_back(tempMatStruct);
-		
-			//BG-Removed mat
-			tempMatStruct.title = "BG REMOVED";
-			tempMatStruct.colorMode = imgMode::BGR;
-			frameRaw.copyTo(tempMatStruct.mat);
-			returnMats.push_back(tempMatStruct);		
-		}
+		cvtColor(frameRaw, frameGrayscale, COLOR_BGR2GRAY);
 	}
 
 	//Get time for measuring elapsed tracking time
 	_timer = _millis();
-
+		
 	//Update tracker, and ensure it's running
 	//THIS FOLLOWING CODE MAY BE HARD TO READ AND MIGHT NEED TO BE CLEANED UP SOMEHOW
 	for (int i = _fishTracker.size() - 1; i >= 0; i--) 
 	{
-		//Update ROI from tracking
+		//Update ROI from tracking			********** CHANGE FOLLOWING LINE FOR TRACKER IF NEED BE **************
 		_fishTracker[i].isTracked = _fishTracker[i].tracker->update(frameRaw, _fishTracker[i].roi);
-			
+		
 		//Make sure we aren't detecting the same object twice
 		for (int j = _fishTracker.size() - 1; j > i; j--)
 		{
@@ -124,70 +110,57 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	_timer = _millis();
 	
 	//Change Color to HSV for easier thresholding
-	cvtColor(frameRaw, frameProcessed, COLOR_BGR2HSV);
+	cvtColor(frameNoBG, frameProcessed, COLOR_BGR2HSV);
 	
-//	//Erode and dilate elements for eroding and dilating image
-//	Mat erodeElement = getStructuringElement(MORPH_RECT, _erodeSize);
-//	Mat dilateElement = getStructuringElement(MORPH_RECT, _dilateSize);
-//	
-//	//Now erode and dilate image so that contours may be picked up a bit more (really, washes away unused thresholded parts)
-//	for (int i = 0; i < _erodeAmount; i++)
-//	{
-//		erode(frameProcessed, frameProcessed, erodeElement);
-//	}
-//	
-//	for (int i = 0; i < _dilateAmount; i++)
-//	{	
-//		dilate(frameProcessed, frameProcessed, dilateElement);			
-//	}
-//	
-//	
-//	//Threshold the image for finding contours
-//	inRange(frameProcessed, _rangeMin, _rangeMax, frameProcessed);
-//			
 
-
-	
+	//Threshold the image for finding contours
 	inRange(frameProcessed, Scalar(10, 0, 0), Scalar(180, 240, 240), frameProcessed);
 	
-	//HACKNSLASH - REMOVE THIS
-	Mat erodeElement = getStructuringElement(MORPH_ELLIPSE, Size(2, 2));
-	erode(frameProcessed, frameProcessed, erodeElement);
-	erode(frameProcessed, frameProcessed, erodeElement);
-	erode(frameProcessed, frameProcessed, erodeElement);
-	erode(frameProcessed, frameProcessed, erodeElement);
-	erode(frameProcessed, frameProcessed, erodeElement);
-	erode(frameProcessed, frameProcessed, erodeElement);
-	erode(frameProcessed, frameProcessed, erodeElement);
-	erode(frameProcessed, frameProcessed, erodeElement);
+	//	//Erode and dilate elements for eroding and dilating image
+	Mat erodeElement = getStructuringElement(MORPH_ELLIPSE, _erodeSize);
+	Mat dilateElement = getStructuringElement(MORPH_ELLIPSE, _dilateSize);
 	
-	Mat dilateElement = getStructuringElement(MORPH_ELLIPSE, Size(4, 4));
-	dilate(frameProcessed, frameProcessed, dilateElement);
-	dilate(frameProcessed, frameProcessed, dilateElement);
-	dilate(frameProcessed, frameProcessed, dilateElement);
-	dilate(frameProcessed, frameProcessed, dilateElement);
+	//Now erode and dilate image so that contours may be picked up a bit more (really, washes away unused thresholded parts)
+	for (int i = 0; i < _erodeAmount; i++)
+	{
+		erode(frameProcessed, frameProcessed, erodeElement);
+	}
+	
+	for (int i = 0; i < _dilateAmount; i++)
+	{	
+		dilate(frameProcessed, frameProcessed, dilateElement);			
+	}
 	
 	//Image is ready to find contours, so first create variables we can find contours in
 	vector<vector<Point>> contours;
 	
 	//Find contours so we can find center and other variables needed for tracking
-	findContours(frameProcessed, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);	
+	findContours(frameProcessed, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);		
 	
 	//Go through these contours and find the parameters of each
 	for (int i = 0; i < contours.size(); i++)
 	{
 		//Get area of contour
 		double thisContourArea = contourArea(contours[i]);
+		
+		//Find roi from contours
+		Rect contourRect = boundingRect(contours[i]);
+		
+		//If in calibration mode, show that a rect is found here for information
+		if (_programMode == ftMode::CALIBRATION)
+		{
+			Scalar thisColor = Scalar(255, 0, 255);
+			Point thisPoint = Point(contourRect.x + contourRect.width / 2, contourRect.y - contourRect.height / 2 + 5);
+			putText(frameProcessed, "Area: " + to_string(thisContourArea), thisPoint, FONT_HERSHEY_PLAIN, 0.4, thisColor);
+			rectangle(frameProcessed, contourRect, thisColor, 2);					
+		}
 			
 		//Only process it if meets over certain threshold
-		if (thisContourArea >= _minThresholdArea)
+		if (thisContourArea >= _minThresholdArea && thisContourArea <= _maxThresholdArea)
 		{			
 			//Test-tell me what area that is
 			_logger(_loggerData, "Area of found ball is... " + to_string(thisContourArea)); 
-					
-			//Find roi from contours
-			Rect contourRect = boundingRect(contours[i]);
-				
+
 			//Make roi smaller that will actually be tracked
 			//First need center
 			Point centerPoint = Point(contourRect.x + contourRect.width / 2, contourRect.y + contourRect.height / 2);
@@ -213,19 +186,20 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 			{					
 				//Checks for overlap and stores result
 				fishOverlappedROIs |= ((contourRect & fish.roi).area() > _minCombinedRectArea);
-					
+	
 				//Can exit loop if there's been an overlap
 				if (fishOverlappedROIs)
 				{
 					break;
 				}					
 			}
-				
+			
 			//Now see if a tracker has been lost, and if a widened area (by a reasonable amount) overlaps with the contour
 			//If so, then have that specific tracker "re-track" with the contour
 			bool fishRetracked = false;
 			for (auto& fish : _fishTracker)
 			{
+				
 				//Skip iteration if tracker hasn't been lost
 				if (fish.isTracked)
 				{ 
@@ -241,16 +215,58 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 					fish.isTracked = true;
 						
 					//Re-initialize the tracker with the new coordinates
-					fish.tracker = TrackerKCF::create();
+					TrackerKCF::Params params;
+					fish.tracker = TrackerKCF::create(params);
 					fish.tracker->init(frameRaw, contourRectROI);
-						
+					
 					_logger(_loggerData, "Object retracked");
 				}
 			}
 				
+			//One last thing that needs to be checked is if this is a reflection
+			//The method I can think of best doing this is by creating an artificial rect for both the input and output, and comparing the two
+			bool isReflection = false;
+			Rect currentContourRect = Rect(contourRect.x, 0, contourRect.x + contourRect.width, 2);
+			
+			for (auto& fish : _fishTracker)
+			{
+				Rect newFishROIRect = Rect(fish.roi.x - EXTRA_REFLECT_WIDTH, 0, fish.roi.x + fish.roi.width + EXTRA_REFLECT_WIDTH, 3);
+				
+				//Two things we need to check:
+				// 1.) Is this contour ABOVE the ROI of a tracked object?
+				// 2.) Is this contour's x horizontally between the start and end of the tracked object?
+				if (contourRect.y < fish.roi.y && (newFishROIRect & currentContourRect).area() > 0)
+				{
+					isReflection = true;
+					break;				
+				}			
+			}
+			
+			//Now need to iterate through the other contours
+			if (!isReflection)
+			{				
+				for (int j = 0; j < contours.size(); j++) 
+				{
+					//Disregard this iteration of loop if it's the same contour
+					if (i == j)
+					{
+						continue;						
+					}
+					
+					Rect comparedContour = boundingRect(contours[j]);
+					Rect comparedContourNewRect = Rect(comparedContour.x - EXTRA_REFLECT_WIDTH, 0, comparedContour.x + comparedContour.width + EXTRA_REFLECT_WIDTH, 2);
+				
+					if (contourRect.y < comparedContour.y && (comparedContourNewRect & currentContourRect).area() > 0)
+					{
+						isReflection = true;
+						break;				
+					}		
+				}
+			}
+			
 			//If no overlap, then make new struct and track
-			if (!fishOverlappedROIs && !fishRetracked)
-			{					
+			if (!fishOverlappedROIs && !fishRetracked && !isReflection)
+			{									
 				//Initialize struct that keeps track of the tracking info
 				FishTrackerStruct tempTracker;					
 				tempTracker.isTracked = true;
@@ -259,19 +275,92 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 				tempTracker.roi = contourRectROI;
 				tempTracker.posX.push_back(contourRectROI.x);
 				tempTracker.lostFrameCount = 0;
+				tempTracker.startTime = _millis();
+				tempTracker.currentTime = _millis() - tempTracker.startTime;
 					
 				//Now add that to the overall fish tracker
-				_fishTracker.push_back(tempTracker);		
+				_fishTracker.push_back(tempTracker);						
 				
 				_logger(_loggerData, "Object found");
-			}																	
+			}
+			
+			//Add information about contour to the processed frame
+			if (_programMode == ftMode::CALIBRATION)
+			{
+				Scalar infoColor = Scalar(255, 255, 255);
+				Point infoPoint = Point(contourRectROI.x + 5, contourRectROI.y - 10);
+				
+				String infoString = "OBJECT FOUND";
+				if (isReflection) infoString = "REFLECTION";
+				if (fishRetracked) infoString = "RETRACKABLE";
+				if (fishOverlappedROIs) infoString = "ALREADY TRACKED";
+				
+				putText(frameProcessed, infoString, infoPoint, FONT_HERSHEY_PLAIN, 0.6, infoColor);
+				rectangle(frameProcessed, contourRectROI, infoColor, 3);
+			}
+						
+			/********** DELME LATER *************/
+			if (_testing)
+			{
+				if (isReflection)
+				{
+					Scalar thisColour = Scalar(0, 0, 255);
+					rectangle(frameRaw, contourRect, thisColour, 3);
+					putText(frameRaw, "Reflection", Point(contourRect.x, contourRect.y - 6), FONT_HERSHEY_PLAIN, 0.7, thisColour, 2);
+				}
+				else 
+				{
+					Scalar thisColour = Scalar(0, 255, 0);
+					rectangle(frameRaw, contourRect, thisColour, 3);
+					putText(frameRaw, "No reflection", Point(contourRect.x, contourRect.y - 6), FONT_HERSHEY_PLAIN, 0.7, thisColour, 2);	
+				}
+			}
+			
 		}
 	}		
-			
-	//Parse through all fish trackers, from end to beginning, and execute any code if tracking has been lost
-	//Must go backwards else this algorithm will actually skip elements
-	for (int i = _fishTracker.size() - 1; i >= 0; i--) 
+		
+	//Parse through all fish trackers, from end to beginning, and do housekeeping
+	//Meaning: 1. Time gets updated, and delete if timeout (ONLY if ROI isn't in center though)
+	//2. delete tracked object if tracking has been lost
+	//3. need to check if the contour is a reflection. Need to delete if it is a reflection
+	
+	//First, get edges
+	vector<Rect> edges;
+	
+	edges.push_back(Rect(0, 0, _frameSize.width*_marginProportion, _frameSize.height)); // left
+	edges.push_back(Rect(_frameSize.width*(1 - _marginProportion), 0, _frameSize.width*_marginProportion, _frameSize.height)); // right
+	edges.push_back(Rect(0, 0, _frameSize.width, _frameSize.height *_marginProportion * 0.5)); // top
+	edges.push_back(Rect(0, _frameSize.height * (1 - _marginProportion * 0.5), _frameSize.width, _frameSize.height *_marginProportion * 0.5)); // bottom
+	
+	if (_testing)
 	{
+		for (auto edge : edges) 
+		{
+			rectangle(frameRaw, edge, Scalar(150, 150, 150), 2);
+		}
+	}
+	
+	//Now parse through fishTrackers
+	//Must go backwards else this algorithm will actually skip elements	
+	for (int i = _fishTracker.size() - 1; i >= 0; i--) 
+	{	
+		
+		_fishTracker[i].currentTime = _millis() - _fishTracker[i].startTime;
+		bool trackedObjectOutdated = _fishTracker[i].currentTime > TRACKER_TIMEOUT_MILLIS;
+		
+		//if (_testing)
+		{
+			putText(frameRaw, "Time ellapsed: " + to_string((int) _fishTracker[i].currentTime) + "ms", _fishTracker[i].roi.tl() + Point(40, -10), FONT_HERSHEY_PLAIN, 0.6, Scalar(190, 190, 190));
+		}
+		
+		//Delete if timeout and isn't in center of screen
+		if (trackedObjectOutdated && !(_frameMiddle > _fishTracker[i].roi.x && _frameMiddle < _fishTracker[i].roi.x + _fishTracker[i].roi.width))
+		{
+			_fishTracker.erase(_fishTracker.begin() + i);
+			_logger(_loggerData, "TRACKING TIMEOUT FOR ELEMENT: " + to_string(i + 1));	
+			continue; // Move onto next iteration
+		}
+		
 		if (!_fishTracker[i].isTracked)
 		{	
 			//Count amount of frames the fish has been lost for
@@ -279,27 +368,72 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 				
 			//See if the item is just on the edge
 			bool isOnEdge = false;
-				
-			//Sees if the object is on the horizontal edges of the frame
-			if ((_fishTracker[i].roi.x + _fishTracker[i].roi.width / 2) < _frameSize.width*_marginProportion || (_fishTracker[i].roi.x + _fishTracker[i].roi.width / 2) > _frameSize.width*(1 - _marginProportion))
+			
+			for (auto edge : edges) 
 			{
-				isOnEdge = true;
-			}
-				
-			if (_fishTracker[i].lostFrameCount >= _retrackFrames || isOnEdge == true)
+				isOnEdge |= (edge & _fishTracker[i].roi).area() > 0;
+			}		
+			
+						
+			if (_fishTracker[i].lostFrameCount >= _retrackFrames || isOnEdge)
 			{
 				//After trying to retrack a while, element cannot be found so it should be removed from overall vector list
 				_fishTracker.erase(_fishTracker.begin() + i);
-				_logger(_loggerData, "TRACKING LOST FOR ELEMENT: " + to_string(i + 1));											
+				_logger(_loggerData, "TRACKING LOST FOR ELEMENT: " + to_string(i + 1));	
+				continue;
 			}
 		}
 		else
 		{
 			//Reset if fish has been found again
 			_fishTracker[i].lostFrameCount = 0;
-		}				
-	}
+		}
 		
+		//Check to see if there's another object below it, and if so delete it from tracked vector list
+		Rect modifiedCurrentRect = Rect(_fishTracker[i].roi.x, 0, _fishTracker[i].roi.x + _fishTracker[i].roi.width, 3);
+			
+		for (int j = 0; j < _fishTracker.size(); j++) 
+		{
+				
+			//Don't bother if it is the same number
+			if (i == j)
+			{
+				continue;
+			}
+				
+			Rect modifiedCompareRect = Rect(_fishTracker[j].roi.x, 0, _fishTracker[j].roi.x + _fishTracker[j].roi.width, 3);
+				
+			//IF this is true, that means tracked object is directly above another tracked object
+			//This could be improved, but for now we will consider that a reflection
+			//(How could it be improved? Two objects could be real above and beneath each other)
+			if (_fishTracker[i].roi.y < _fishTracker[j].roi.y && (modifiedCompareRect & modifiedCurrentRect).area() > 0)
+			{
+				_fishTracker.erase(_fishTracker.begin() + i);
+				_logger(_loggerData, "REFLECTION DETECTED, DELETING OBJECT: " + to_string(i + 1));		
+				break;					
+			}
+		}
+	}
+	
+	//Return first mat no matter what 
+	// ->	If more efficiency is needed, the following scope can be removed
+	//		and then fishCenS.cpp will need to be adjusted so 
+	//		that during the hconcat/vconcat, frame -> frameDraw
+	{		
+		//Make automatic mutex control
+		lock_guard<mutex> guard(lock);
+		
+		//Make struct for storing in returnMats
+		returnMatsStruct tempMatStruct;
+		
+		//Mask mat
+		tempMatStruct.title = "NORMAL";
+		tempMatStruct.colorMode = imgMode::BGR;
+		frameRaw.copyTo(tempMatStruct.mat);
+		returnMats.push_back(tempMatStruct);
+	
+	}	
+	
 	//Returns Mats if need be
 	if (_programMode == ftMode::CALIBRATION)
 	{	
@@ -308,6 +442,18 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 		
 		//Make struct for storing in returnMats
 		returnMatsStruct tempMatStruct;
+
+		//Mask mat
+		tempMatStruct.title = "MASK";
+		tempMatStruct.colorMode = imgMode::BINARY;
+		frameMask.copyTo(tempMatStruct.mat);
+		returnMats.push_back(tempMatStruct);
+		
+		//BG-Removed mat
+		tempMatStruct.title = "BG REMOVED";
+		tempMatStruct.colorMode = imgMode::BGR;
+		frameNoBG.copyTo(tempMatStruct.mat);
+		returnMats.push_back(tempMatStruct);		
 		
 		//Processed binary image
 		tempMatStruct.title = "PROCESSED";
@@ -315,6 +461,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 		frameProcessed.copyTo(tempMatStruct.mat);
 		returnMats.push_back(tempMatStruct);		
 	}	
+	
 	
 	//Copy rects from fishTracker vector to parent class
 	ROIRects.clear();
@@ -332,6 +479,9 @@ bool FishTracker::init(unsigned int video_width, unsigned int video_height, Scal
 	//Emptying data vectors	
 	_loggerData.clear();
 	_loggerCsv.clear();
+	
+	//Test mode for seeing important parameters
+	_testing = false;
 	
 	//Background removal object initialization
 	_pBackSub = cv::createBackgroundSubtractorKNN();
@@ -354,6 +504,7 @@ bool FishTracker::init(unsigned int video_width, unsigned int video_height, Scal
 	
 	//Thresholding minimum area of contour to throw into tracker
 	_minThresholdArea = DEFAULT_MIN_AREA;
+	_maxThresholdArea = DEFAULT_MAX_AREA;
 	
 	//Minimum area that combined ROIs can be before they are considered a "tracked object" already
 	_minCombinedRectArea = DEFAULT_COMBINED_RECT_AREA;
@@ -406,6 +557,29 @@ void FishTracker::setDilate(Size dilateSize)
 Size FishTracker::getDilate()
 {
 	return _dilateSize;
+}
+
+int FishTracker::getErodeAmount()
+{
+	return _erodeAmount;
+}
+
+
+void FishTracker::setErodeAmount(int thisErodeAmount)
+{
+	_erodeAmount = thisErodeAmount;
+}
+
+
+int FishTracker::getDilateAmount()
+{
+	return _dilateAmount;
+}
+
+
+void FishTracker::setDilateAmount(int thisDilateAmount)
+{
+	_dilateAmount = thisDilateAmount;
 }
 
 //Setting HSV range for when you want to change both
@@ -634,7 +808,9 @@ void FishTracker::_logger(vector<string>& logger, string data)
 		logger.erase(logger.begin());
 	}
 	
-	logger.push_back(_getTime() + ": " + data + "\n");
+	string logString = _getTime() + ": " + data;
+	//cout << logString << "\n";
+	logger.push_back(logString);
 }
 
 //Saves both data and elapsed tracking frame times to files
@@ -700,4 +876,10 @@ vector<Rect> FishTracker::_getRects()
 	}
 	
 	return tempRects;
+}
+
+
+void FishTracker::setTesting(bool isTesting)
+{
+	_testing = isTesting;
 }

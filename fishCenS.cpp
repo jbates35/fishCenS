@@ -22,6 +22,9 @@ FishCenS::~FishCenS()
 	_log("Closing stream...");
 	destroyAllWindows();
 	_cam.stopVideo();
+
+	//Turn LED off
+	gpioSetMode(LED_PIN, PI_OUTPUT);
 	gpioWrite(LED_PIN, 0);
 }
 
@@ -60,7 +63,7 @@ int FishCenS::init(fcMode mode)
 {	
 	//Testing of parameters
 	_testing = false;
-	
+
 	//Mode of fishCenS object
 	_mode = mode;
 
@@ -76,6 +79,7 @@ int FishCenS::init(fcMode mode)
 	_timers["drawTime"] = _millis();
 	_timers["depthTimer"] = _millis();
 	_timers["tempTimer"] = _millis();
+	_timers["ledTimer"] = _millis();
 
 	//Tracking and fish counting
 	_fishCount = 0;
@@ -205,12 +209,14 @@ int FishCenS::init(fcMode mode)
 
 	//Initiate calibration parameters
 
-	//Turn LED light on
-	if (_mode == fcMode::TRACKING || _mode == fcMode::CALIBRATION || _mode == fcMode::VIDEO_RECORDER)
-	{
-		_ledState = true;
-		gpioWrite(LED_PIN, _ledState);
-	}
+	//Setup LED to be PWM
+	_ledState = true;
+	gpioSetMode(LED_PIN, PI_ALT0);
+	_ledPwmFreq = DEFAULT_LED_FREQ;
+	_ledPwmMin = LED_DEFAULT_PWM_MIN;
+	_ledPwmMax = LED_DEFAULT_PWM_MAX;
+	_ledPwmInt = LED_DEFAULT_PWM_INT;
+	_ledPwmDC = _ledPwmMin;
 
 	//Initiate sensors - including serial for ultrasonic
 	_depthSerialOpen = _depthObj.init();
@@ -229,6 +235,8 @@ int FishCenS::init(fcMode mode)
 int FishCenS::_update()
 {
 
+	//Set LED PWM (Will be where camera lighting -> PWM code goes)
+	_setLED();
 
 	if (_mode == fcMode::TRACKING)
 	{
@@ -240,10 +248,7 @@ int FishCenS::_update()
 			_timers["tempTimer"] = _millis();
 			//Temperature::getTemperature(_currentTemp, _baseLock);
 			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_sensorLock));
-			_threadVector.push_back(move(temperatureThread));	
-			
-			_ledState = !_ledState;
-			gpioWrite(LED_PIN, _ledState);		
+			_threadVector.push_back(move(temperatureThread));		
 		}
 
 		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
@@ -768,4 +773,21 @@ int FishCenS::_showRectInfo(Mat& im)
 	line(im, Point(midPoint, 0), Point(midPoint, im.size().height), Scalar(0, 255, 255), 2);
 	
 	return true;
+}
+
+//Sets up PWM by seeing what amoutn of lightis in the cmaera and calibrates
+int FishCenS::_setLED()
+{
+	if(_millis() - _timers["ledTimer"] >= 400)
+	{
+		_timers["ledTimer"] = _millis();
+		_ledPwmDC += LED_DEFAULT_PWM_INT;
+
+		if(_ledPwmDC >= _ledPwmMax) 
+		{
+			_ledPwmDC = _ledPwmMin;
+		}
+
+		gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
+	}
 }

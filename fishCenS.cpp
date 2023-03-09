@@ -57,7 +57,10 @@ int FishCenS::run()
 }
 
 int FishCenS::init(fcMode mode)
-{
+{	
+	//Testing of parameters
+	_testing = false;
+	
 	//Mode of fishCenS object
 	_mode = mode;
 
@@ -235,12 +238,12 @@ int FishCenS::_update()
 		if ((_millis() - _timers["tempTimer"]) >= TEMPERATURE_PERIOD)
 		{
 			_timers["tempTimer"] = _millis();
-			Temperature::getTemperature(_currentTemp, _baseLock);
-			//thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_baseLock));
-			//_threadVector.push_back(move(temperatureThread));
-
-			//_ledState = !_ledState;
-			//gpioWrite(LED_PIN, _ledState);
+			//Temperature::getTemperature(_currentTemp, _baseLock);
+			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_sensorLock));
+			_threadVector.push_back(move(temperatureThread));	
+			
+			_ledState = !_ledState;
+			gpioWrite(LED_PIN, _ledState);		
 		}
 
 		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
@@ -250,10 +253,10 @@ int FishCenS::_update()
 			if (_depthSerialOpen > 0)
 			{
 				//_depthObj.getDepth(_currentDepth, _baseLock);
+				
+				std::thread depthThread(&Depth::getDepth, ref(_depthObj), ref(_currentDepth), ref(_sensorLock));
+				depthThread.detach();
 
-
-				//std::thread depthThread(&Depth::getDepth, ref(_depthObj), ref(_currentDepth), ref(_baseLock));
-				//depthThread.detach();
 			}
 
 		}
@@ -304,10 +307,10 @@ int FishCenS::_update()
 	}
 
 	//Start tracking thread
-	if (_mode != fcMode::VIDEO_RECORDER)
+	if (_mode != fcMode::VIDEO_RECORDER && !_frame.empty())
 	{
-		//Remove bg, run tracker, do image processing
-		std::thread trackingThread(&FishTracker::run, _fishTrackerObj, ref(_frame), ref(_returnMats), ref(_baseLock), ref(_fishCount), ref(_ROIRects));
+    //Remove bg, run tracker, do image processing
+		std::thread trackingThread(&FishTracker::run, ref(_fishTrackerObj), ref(_frame), ref(_returnMats), ref(_baseLock), ref(_fishCount), ref(_ROIRects));
 		_threadVector.push_back(move(trackingThread));
 	}
 
@@ -338,25 +341,52 @@ int FishCenS::_draw()
 	if ((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
 	{
 		lock_guard<mutex> guard(_baseLock);
-
+    
+		//Show info about tracked objects
+		_showRectInfo(_returnMats[0].mat);
+		
+		for (auto matsStruct : _returnMats)
+		{
+			putText(matsStruct.mat, "Mat: " + matsStruct.title, Point(5, 15), FONT_HERSHEY_PLAIN, 0.6, Scalar(155, 230, 255), 1);	
+		}
+		
+		string fishCountStr = "Fish counted: " + to_string(_fishCount);
+		string fishTrackedStr = "Fish currently tracked: " + to_string(_ROIRects.size());
+		putText(_returnMats[0].mat, fishCountStr, FISH_COUNT_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		putText(_returnMats[0].mat, fishTrackedStr, FISH_TRACKED_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		
 		//Change color spaces of mat to fit BGR
-		cvtColor(_returnMats[2].mat, _returnMats[2].mat, COLOR_GRAY2BGR);
-		cvtColor(_returnMats[0].mat, _returnMats[0].mat, COLOR_GRAY2BGR);
+		cvtColor(_returnMats[3].mat, _returnMats[3].mat, COLOR_GRAY2BGR);
+		cvtColor(_returnMats[1].mat, _returnMats[1].mat, COLOR_GRAY2BGR);
 
 		//Create a side by side image of 4 shots
+		hconcat(_returnMats[1].mat, _returnMats[3].mat, _returnMats[1].mat);
 		hconcat(_returnMats[0].mat, _returnMats[2].mat, _returnMats[0].mat);
-		hconcat(_frame, _returnMats[1].mat, _frameDraw);
-		vconcat(_frameDraw, _returnMats[0].mat, _frameDraw);
-		_gui_object._gui(_frameDraw, _fishTrackerObj);
-
+		vconcat(_returnMats[0].mat, _returnMats[1].mat, _frameDraw);
+			
 		//Update with trackbars
+		_gui_object._gui(_frameDraw, _fishTrackerObj);		
 	}
 
 	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::VIDEO_RECORDER)
 	{
 		lock_guard<mutex> guard(_baseLock);
 
-		_frame.copyTo(_frameDraw);
+		if (_returnMats.size() > 0) 
+		{
+			_returnMats[0].mat.copyTo(_frameDraw);			
+		}
+		else
+		{
+			_frame.copyTo(_frameDraw);
+		}
+		
+		if (_mode != fcMode::VIDEO_RECORDER) 
+		{		
+			//Show info about tracked objects
+			_showRectInfo(_frameDraw);			
+		}
+			
 	}
 
 	//With tracking mode, we need sensor information (Maybe need this for calibration mode w video too?)
@@ -369,8 +399,8 @@ int FishCenS::_draw()
 		putText(_frameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 		putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 	}
-
-	if (!_frameDraw.empty() && (_mode != fcMode::CALIBRATION || _mode != fcMode::CALIBRATION_WITH_VIDEO))
+  
+	if (!_frameDraw.empty() && (_mode != fcMode::CALIBRATION && _mode != fcMode::CALIBRATION_WITH_VIDEO))
 	{
 		imshow("Video", _frameDraw);
 	}
@@ -397,6 +427,21 @@ void FishCenS::_videoRecordUpdate()
 {
 }
 
+void FishCenS::_videoRun()
+{
+	double vidTimer = getTickCount()/getTickFrequency();
+
+	while(_returnKey != 's' || _returnKey != 'S')
+	{
+		if(getTickCount()/getTickFrequency() - vidTimer >= 1/30)
+		{	
+			vidTimer = getTickCount()/getTickFrequency();
+			_vidRecord.run(_frame, _baseLock);
+		}
+	}
+
+	_vidRecord.close();
+}
 
 int FishCenS::_getVideoEntry(string& selectionStr)
 {
@@ -669,4 +714,58 @@ void FishCenS::_updateThreadStart(FishCenS* ptr)
 void FishCenS::_drawThreadStart(FishCenS* ptr)
 {
 	ptr->_draw();
+}
+
+void FishCenS::_videoRunThread(FishCenS* ptr)
+{
+	ptr->_videoRun();
+}
+
+void FishCenS::setTesting(bool isTesting)
+{
+	_testing = isTesting;
+	
+	//Set classes as well
+	_fishTrackerObj.setTesting(_testing);
+}
+
+//Shows info such as ROI, midline, and text about tracked object info
+int FishCenS::_showRectInfo(Mat& im)
+{
+	if (im.empty())
+	{
+		return false;
+	}
+	
+	//Fish information
+	string fishCountStr = "Fish counted: " + to_string(_fishCount);
+	string fishTrackedStr = "Fish currently tracked: " + to_string(_ROIRects.size());
+	putText(im, fishCountStr, FISH_COUNT_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+	putText(im, fishTrackedStr, FISH_TRACKED_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+	
+	//Fish ROIs drawn + other information
+	int index = 0;
+	for (Rect fishROI : _ROIRects)
+	{							
+		rectangle(im, fishROI, Scalar(130, 0, 180), 2);
+					
+		vector<String> rectString;
+				
+		rectString.push_back("Object " + to_string(index++) + " tracked");
+		rectString.push_back("Area: " + to_string(fishROI.width * fishROI.height));		
+		rectString.push_back("Point: <" + to_string(fishROI.x) + ", " + to_string(fishROI.y) + ">");					
+		Point textPoint = Point(fishROI.x + 10, fishROI.y + fishROI.height + 10);
+				
+		for (auto i = 0; i < rectString.size(); i++)
+		{
+			putText(im, rectString[i], textPoint, FONT_HERSHEY_PLAIN, 0.7, Scalar(130, 0, 180), 1);
+			textPoint.y += 10;
+		}
+	}	
+			
+	//Draw line for seeing middle
+	int midPoint = _fishTrackerObj.getFrameCenter();
+	line(im, Point(midPoint, 0), Point(midPoint, im.size().height), Scalar(0, 255, 255), 2);
+	
+	return true;
 }

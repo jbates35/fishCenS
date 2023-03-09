@@ -54,6 +54,9 @@ namespace _fc
 	const Point DEPTH_STRING_POINT = Point(50, VIDEO_HEIGHT - 40);
 	const Point TEMP_STRING_POINT = Point(50, VIDEO_HEIGHT - 20);
 	
+	const Point FISH_COUNT_POINT = Point(50, 30);
+	const Point FISH_TRACKED_POINT = Point(50, 50);
+	
 	const double SENSOR_STRING_SIZE = 1;
 	const double SENSOR_STRING_THICKNESS = 2;
 	
@@ -116,9 +119,18 @@ public:
 	 **/		
 	char getReturnKey();
 
+	/**
+	 ** @brief Turns testing mode on or off to show important parameters on screen
+	 ** @param isTesting true for testing, false to turn testing off
+	 ***/
+	void setTesting(bool isTesting);
+
 private:
 	////////////// PARAMTERS/OBJS //////////////
 	
+	//For testing mode
+	bool _testing;
+
 	//Mode of fishCenS defined by initiation
 	fcMode _mode;
 	
@@ -138,6 +150,7 @@ private:
 	bool _ledState;
 	
 	//Video recording
+	VideoRecord _vidRecord;
 	vrMode _videoRecordState;
 	int _videoWidth;
 	int _videoHeight;
@@ -151,7 +164,7 @@ private:
 	
 	//Mutex for threadlocking/threading
 	vector<thread> _threadVector;
-	mutex _baseLock;
+	mutex _baseLock, _sensorLock;
 	
 	//Logger stuff
 	vector<string> _fcLogger;
@@ -182,6 +195,9 @@ private:
 	int _draw();	
 	static void _drawThreadStart(FishCenS* ptr);
 	
+	void _videoRun();
+	static void _videoRunThread(FishCenS* ptr);
+
 	void _trackingUpdate(); //takes care of normal tracking, and tracking with video (alpha mode)
 	void _calibrateUpdate();
 	
@@ -197,5 +213,5 @@ private:
 	static double _millis(); //Returns ms to be used with getTickCount/getTickFreq
 	void _log(string data, bool outputToScreen = false); //Writes to log vector, outputs to screen if need be
 	int _saveLogFile(); //Ensures data folder exists and saves log file there 
-	
+	int _showRectInfo(Mat& im); // Show rects for ROI, and shows info about them	
 };

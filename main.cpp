@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
 			
 			if(initSuccess>0)
 			{
+				//fc.setTesting(true);
 				fc.run();
 			}
 		}

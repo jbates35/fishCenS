@@ -14,22 +14,23 @@ using namespace std;
 
 
 //Minimum area to initiate tracker to
-#define DEFAULT_MIN_AREA 800
+#define DEFAULT_MIN_AREA 400
+#define DEFAULT_MAX_AREA 25000
 
 //Minimum area of combined rect before it's considered "overlapping" 
 #define DEFAULT_COMBINED_RECT_AREA 0
 
 //Default region of ROI 
-#define DEFAULT_RECT_SCALE 1
+#define DEFAULT_RECT_SCALE 1.4
 
 //Proportional margin of the camera frame that will be 
 #define DEFAULT_MARGIN 0.1
 
 //When an object is lost, the amount of pixels surrounding the last ROI it will look for an untracked object
-#define DEFAULT_RETRACK_PIXELS 100
+#define DEFAULT_RETRACK_PIXELS 50
 
 //Amount of frames occlusion will try to re-track an object for, before deleting from the tracking vector
-#define DEFAULT_RETRACK_FRAMES 5
+#define DEFAULT_RETRACK_FRAMES 10
 
 //File path logger gets saved to by default
 #define DEFAULT_FILE_PATH "./"
@@ -67,15 +68,21 @@ namespace _ft
 	
 	//Default params for eroding the image to separate balls
 	const Size DEFAULT_ERODE_SIZE = Size(2, 2);
-	const int DEFAULT_ERODE_AMOUNT = 3;	
+	const int DEFAULT_ERODE_AMOUNT = 6;	
 
 	//Default params for dilating the image to smooth edges
 	const Size DEFAULT_DILATE_SIZE = Size(4, 4);
-	const int DEFAULT_DILATE_AMOUNT = 1;
+	const int DEFAULT_DILATE_AMOUNT = 5;
 	
 	//Max size of the vector that holds all the data, to prevent wildly large files
 	const int MAX_DATA_SIZE = 5000;
 	
+	//Extra X vals to test reflection of
+	const int EXTRA_REFLECT_WIDTH = 10;
+	
+	//Amount of time tracker can last before deleting object
+	const double TRACKER_TIMEOUT_MILLIS = 1000;
+		
 	//Struct keeping track of parameters of fish
 	struct FishTrackerStruct
 	{
@@ -85,6 +92,7 @@ namespace _ft
 		Rect roi;
 		int lostFrameCount;
 		double startTime;
+		double currentTime;
 	};
 
 	//Struct for passing additional mats
@@ -162,6 +170,14 @@ public:
     * @return Dilate size
     **/
 	Size getDilate();
+	
+		int getErodeAmount();
+	
+		void setErodeAmount(int thisErodeAmount);
+	
+		int getDilateAmount();
+	
+		void setDilateAmount(int thisDilateAmount);
 	
 	/**
     * @brief Sets the range of HSV values that the image will be thresholded with
@@ -305,8 +321,17 @@ public:
 	 **/
 	int trackerAmount();
 	
+	/**
+	 ** @brief Turns testing mode on or off to show important parameters on screen
+	 ** @param isTesting true for testing, false to turn testing off
+	 ***/
+	void setTesting(bool isTesting);
+	
 private:
 	////////// PARAMETERS ///////////
+	
+	//Parameters for if testing
+	bool _testing;
 	
 	//Parameters for thresholding
 	Size _erodeSize;
@@ -316,6 +341,7 @@ private:
 	Scalar _rangeMin;
 	Scalar _rangeMax;
 	int _minThresholdArea; // Contour area must be greater than this to be added to tracker
+	int _maxThresholdArea;
 	int _minCombinedRectArea; // Minimum shared area between overlapping rects
 	
     //Parameters for BG Removal

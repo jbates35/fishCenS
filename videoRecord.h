@@ -16,7 +16,7 @@ using namespace cv;
 using namespace std;
 
 
-enum vrMode
+enum class vrMode
 {
 	VIDEO_OFF,
 	VIDEO_SETUP,
@@ -60,10 +60,15 @@ public:
 	void init(Mat& frame, mutex& lock, double fps, string filePath = "");
 
 	/**
+	* 	@brief Closes the video file so it can be re-opened
+	*/
+	void close();
+
+	/**
 	 * @brief Getter for videoWriter's isOpen
 	 * @return True if video is recording
 	 **/
-	bool isOpen();
+	vrMode isOpen();
 	
 private:
 	//////////// PARAMETERS ///////////
@@ -81,7 +86,10 @@ private:
 	
 	//Logger related
 	vector<string> _loggerVec;
-	
+
+	//Keeps track if video is opened
+	vrMode _vrStatus;
+
 	//////////// METHODS ///////////
 	
 	//Gets date&time to name video

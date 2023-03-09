@@ -54,6 +54,9 @@ namespace _fc
 	const Point DEPTH_STRING_POINT = Point(50, VIDEO_HEIGHT - 40);
 	const Point TEMP_STRING_POINT = Point(50, VIDEO_HEIGHT - 20);
 	
+	const Point FISH_COUNT_POINT = Point(50, 30);
+	const Point FISH_TRACKED_POINT = Point(50, 50);
+	
 	const double SENSOR_STRING_SIZE = 1;
 	const double SENSOR_STRING_THICKNESS = 2;
 	

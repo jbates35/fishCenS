@@ -307,7 +307,7 @@ int FishCenS::_update()
 	}
 
 	//Start tracking thread
-	if (_mode != fcMode::VIDEO_RECORDER && !_frame.empty()))
+	if (_mode != fcMode::VIDEO_RECORDER && !_frame.empty())
 	{
 		std::thread trackingThread(&FishTracker::run, ref(_fishTrackerObj), ref(_frame), ref(_returnMats), ref(_baseLock), ref(_fishCount), ref(_ROIRects));
 		_threadVector.push_back(move(trackingThread));

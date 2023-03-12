@@ -228,6 +228,8 @@ int FishCenS::init(fcMode mode)
 	//initialize frame to all black to start
 	_frame = Mat::zeros(Size(_videoWidth, _videoHeight), CV_8UC3);
 
+	std::cout << "We've come here.";
+	
 	return 1;
 }
 
@@ -761,7 +763,7 @@ int FishCenS::_showRectInfo(Mat& im)
 		rectString.push_back("Point: <" + to_string(fishROI.x) + ", " + to_string(fishROI.y) + ">");					
 		Point textPoint = Point(fishROI.x + 10, fishROI.y + fishROI.height + 10);
 				
-		for (auto i = 0; i < rectString.size(); i++)
+		for (auto i = 0; i < (int) rectString.size(); i++)
 		{
 			putText(im, rectString[i], textPoint, FONT_HERSHEY_PLAIN, 0.7, Scalar(130, 0, 180), 1);
 			textPoint.y += 10;
@@ -776,7 +778,7 @@ int FishCenS::_showRectInfo(Mat& im)
 }
 
 //Sets up PWM by seeing what amoutn of lightis in the cmaera and calibrates
-int FishCenS::_setLED()
+void FishCenS::_setLED()
 {
 	if(_millis() - _timers["ledTimer"] >= 400)
 	{

@@ -215,7 +215,7 @@ private:
 	void _calibrateUpdate();
 	
 	//Sensors and lights related
-	int _setLED();
+	void _setLED();
 
 	//ALPHA MODES
 	void _videoRecordUpdate();

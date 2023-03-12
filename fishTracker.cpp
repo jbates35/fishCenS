@@ -138,7 +138,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	findContours(frameProcessed, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);		
 	
 	//Go through these contours and find the parameters of each
-	for (int i = 0; i < contours.size(); i++)
+	for (int i = 0; i < (int) contours.size(); i++)
 	{
 		//Get area of contour
 		double thisContourArea = contourArea(contours[i]);
@@ -177,8 +177,6 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 			Rect contourRectROI = Rect(centerPoint.x - newWidth, centerPoint.y - newHeight, newWidth * 2, newHeight * 2);
 							
 			_logger(_loggerData, "Time ellapsed for thresholding to find first ball is " + to_string(_millis() - _timer) + "ms");
-			
-			double timeStart = _millis();
 					
 			//See if this contour rectangle is an object that's already been detected
 			bool fishOverlappedROIs = false; // Turns true if the contour rect overlaps with one of the fishTracker rois
@@ -245,7 +243,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 			//Now need to iterate through the other contours
 			if (!isReflection)
 			{				
-				for (int j = 0; j < contours.size(); j++) 
+				for (int j = 0; j < (int) contours.size(); j++) 
 				{
 					//Disregard this iteration of loop if it's the same contour
 					if (i == j)
@@ -392,7 +390,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 		//Check to see if there's another object below it, and if so delete it from tracked vector list
 		Rect modifiedCurrentRect = Rect(_fishTracker[i].roi.x, 0, _fishTracker[i].roi.x + _fishTracker[i].roi.width, 3);
 			
-		for (int j = 0; j < _fishTracker.size(); j++) 
+		for (int j = 0; j < (int) _fishTracker.size(); j++) 
 		{
 				
 			//Don't bother if it is the same number

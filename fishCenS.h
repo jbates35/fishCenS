@@ -60,6 +60,12 @@ namespace _fc
 	const double SENSOR_STRING_SIZE = 1;
 	const double SENSOR_STRING_THICKNESS = 2;
 	
+	//LED PWM DC related
+	const int LED_DEFAULT_PWM_MIN = 100000;
+	const int LED_DEFAULT_PWM_MAX = 1000000;
+	const int LED_DEFAULT_PWM_INT = 100000;
+	const int DEFAULT_LED_FREQ = 1000000;
+
 	const Scalar YELLOW = Scalar(0, 255, 255);
 	const Scalar GREEN = Scalar(0, 255, 0);
 	const Scalar BLUE = Scalar(255, 0, 0);
@@ -131,6 +137,13 @@ private:
 	//For testing mode
 	bool _testing;
 
+	//Pigpio related stuff
+	int _ledPwmFreq;
+	int _ledPwmDC;
+	int _ledPwmMin;
+	int _ledPwmMax;
+	int _ledPwmInt;
+
 	//Mode of fishCenS defined by initiation
 	fcMode _mode;
 	
@@ -201,6 +214,9 @@ private:
 	void _trackingUpdate(); //takes care of normal tracking, and tracking with video (alpha mode)
 	void _calibrateUpdate();
 	
+	//Sensors and lights related
+	void _setLED();
+
 	//ALPHA MODES
 	void _videoRecordUpdate();
 	
@@ -214,4 +230,5 @@ private:
 	void _log(string data, bool outputToScreen = false); //Writes to log vector, outputs to screen if need be
 	int _saveLogFile(); //Ensures data folder exists and saves log file there 
 	int _showRectInfo(Mat& im); // Show rects for ROI, and shows info about them	
+
 };

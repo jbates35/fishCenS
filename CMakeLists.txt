@@ -2,29 +2,31 @@
 #Note: VisualGDB will automatically update this file when you add new sources to the project.
 
 cmake_minimum_required(VERSION 3.6)
+
 project(fishCenS)
+
 set (CMAKE_CXX_STANDARD 17)
-set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
+cmake_policy(SET CMP0079 NEW)
 
-#new 
-add_compile_options(-Wall -Wextra -pedantic -Wno-unused-parameter -faligned-new)
-add_definitions(-D_FILE_OFFSET_BITS=64)
+#include directories as required
+include_directories(src/gui)
+include_directories(src/sensor)
+include_directories(src/libcamera)
+include_directories(src)
 
-set(LIBRARIES_FROM_REFERENCES "")
-
-add_executable(fishCenS main.cpp 
-fishCenS.cpp fishCenS.h
-fishTracker.cpp fishTracker.h 
-cvui.h
-lccv.cpp lccv.hpp
-libcamera_app.cpp libcamera_app.h
-libcamera_app_options.cpp libcamera_app_options.h
-videoRecord.cpp videoRecord.h
-led.cpp led.h
-Temperature.cpp Temperature.h
-Depth.cpp Depth.h
-imex.cpp imex.h
-gui.cpp gui.h
+#Add all required .cpp and .h files with main.cpp being main
+add_executable(fishCenS src/main.cpp
+src/fishCenS.cpp src/fishCenS.h
+src/fishTracker.cpp src/fishTracker.h
+src/videoRecord.cpp src/videoRecord.h
+src/gui/gui.cpp src/gui/gui.h
+src/gui/imex.cpp src/gui/imex.h
+src/gui/cvui.h
+src/sensor/Depth.cpp src/sensor/Depth.h
+src/sensor/Temperature.cpp src/sensor/Temperature.h
+src/libcamera/lccv.cpp src/libcamera/lccv.hpp
+src/libcamera/libcamera_app.cpp src/libcamera/libcamera_app.h
+src/libcamera/libcamera_app_options.cpp src/libcamera/libcamera_app_options.h
 )
 
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
@@ -109,4 +111,6 @@ message(STATUS "    include path: ${LIBCAMERA_INCLUDE_DIRS}")
 include_directories(include ${LIBCAMERA_INCLUDE_DIRS} ${pigpio_INCLUDE_DIR} ${OPENCV_INCLUDE_DIRS})
 
 set_target_properties(fishCenS PROPERTIES PREFIX "" IMPORT_PREFIX "")
-target_link_libraries(fishCenS pthread stdc++fs ${CMAKE_THREAD_LIBS_INIT} ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} "${LIBRARIES_FROM_REFERENCES}")
+
+#Specify any required libraries
+target_link_libraries(fishCenS ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} ${CMAKE_THREAD_LIBS_INIT})

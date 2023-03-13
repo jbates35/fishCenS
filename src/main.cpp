@@ -1,9 +1,7 @@
 #include <iostream>
 #include <pigpio.h>
 
-
 #include "fishCenS.h"
-
 
 int main(int argc, char *argv[])
 {

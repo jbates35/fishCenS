@@ -6,13 +6,13 @@
 #include <map>
 #include <thread>
 
-#include "lccv.hpp"
+#include "libcamera/lccv.hpp"
 #include "fishTracker.h"
 #include "videoRecord.h"
-#include "Depth.h"
-#include "Temperature.h"
-#include "gui.h"
-#include "imex.h"
+#include "sensor/Depth.h"
+#include "sensor/Temperature.h"
+#include "gui/gui.h"
+#include "gui/imex.h"
 
 using namespace std;
 using namespace cv;

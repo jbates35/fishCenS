@@ -780,16 +780,35 @@ int FishCenS::_showRectInfo(Mat& im)
 //Sets up PWM by seeing what amoutn of lightis in the cmaera and calibrates
 void FishCenS::_setLED()
 {
-	if(_millis() - _timers["ledTimer"] >= 400)
+	lock_guard<mutex> lock(_pwmLock);
+	Mat lightFrame;
+	
+	gpioHardwarePWM(LED_PIN, _ledPwmFreq, 0);
+	
+	double pwmStartTimer = _millis();
+	
+	while (_millis() - pwmStartTimer <= LIGHT_REFRESH) 
 	{
-		_timers["ledTimer"] = _millis();
-		_ledPwmDC += LED_DEFAULT_PWM_INT;
-
-		if(_ledPwmDC >= _ledPwmMax) 
-		{
-			_ledPwmDC = _ledPwmMin;
-		}
-
-		gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
 	}
+	
+	//Store the class's camera object into lightFrame
+	if (!_cam.getVideoFrame(lightFrame, 1000))
+	{
+		_log("Timeout error while initializing", true);
+	}
+	
+	//Calculate the amount of light in the frame
+	int lightAmt = 0;
+	//
+	//
+	//
+	//
+	//
+	
+	//Map 255-lightAmt to LED_DEFAULT_PWM_MIN - LED_DEFAULT_PWM_MAX
+	_ledPwmDC = (255 - lightAmt) * (LED_DEFAULT_PWM_MAX - LED_DEFAULT_PWM_MIN) / 255 + LED_DEFAULT_PWM_MIN;
+	
+	//Set the PWM value of the gpioPin to pwmVal
+	gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
+
 }

@@ -62,6 +62,13 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	
 	while (true) {
 		
+		//Flush serial buffer by reading all bytes
+		while (serDataAvailable(_uart) > 0) 
+		{
+			//Read serial byte
+			serReadByte(_uart);
+		}
+		
 		while ((serDataAvailable(_uart) <= 3) && !_timeOut)  
 		{
 			_timeOut = (getTickCount() / getTickFrequency() - _startTimer) > UART_TIMEOUT;

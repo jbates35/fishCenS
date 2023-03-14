@@ -177,7 +177,9 @@ private:
 	
 	//Mutex for threadlocking/threading
 	vector<thread> _threadVector;
-	mutex _baseLock, _sensorLock;
+	mutex _baseLock;
+	mutex _tempLock;
+	mutex _depthLock;
 	
 	//Logger stuff
 	vector<string> _fcLogger;

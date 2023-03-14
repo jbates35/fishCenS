@@ -250,7 +250,7 @@ int FishCenS::_update()
 		{
 			_timers["tempTimer"] = _millis();
 			//Temperature::getTemperature(_currentTemp, _baseLock);
-			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_sensorLock));
+			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));
 			_threadVector.push_back(move(temperatureThread));		
 		}
 
@@ -262,7 +262,7 @@ int FishCenS::_update()
 			{
 				//_depthObj.getDepth(_currentDepth, _baseLock);
 				
-				std::thread depthThread(&Depth::getDepth, ref(_depthObj), ref(_currentDepth), ref(_sensorLock));
+				std::thread depthThread(&Depth::getDepth, ref(_depthObj), ref(_currentDepth), ref(_depthLock));
 				depthThread.detach();
 
 			}
@@ -401,11 +401,19 @@ int FishCenS::_draw()
 	if (_mode == fcMode::TRACKING)
 	{
 		//Sensor strings to put on screen
-		string depthStr = "Depth: " + to_string(_currentDepth);
-		string tempStr = "Temperature: " + to_string(_currentTemp);
-
-		putText(_frameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
-		putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		{
+			//Lock depth lock guard
+			lock_guard<mutex> guard(_depthLock);
+			string depthStr = "Depth: " + to_string(_currentDepth);
+			putText(_frameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		}
+		
+		{
+			//Lock temp lock guard
+			lock_guard<mutex> guard(_tempLock);
+			string tempStr = "Temperature: " + to_string(_currentTemp);
+			putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		}
 	}
   
 	if (!_frameDraw.empty() && (_mode != fcMode::CALIBRATION && _mode != fcMode::CALIBRATION_WITH_VIDEO))

@@ -238,7 +238,8 @@ int FishCenS::_update()
 {
 
 	//Set LED PWM (Will be where camera lighting -> PWM code goes)
-	_setLED();
+	//_setLED();
+	gpioHardwarePWM(LED_PIN, _ledPwmFreq, 1000000);
 
 	if (_mode == fcMode::TRACKING)
 	{

@@ -12,7 +12,8 @@ Depth::Depth()
 
 Depth::~Depth()
 {
-	serClose(_uart);
+	//serClose(_uart);
+
 	//	GetTime();
 	//	Distdata.open(filename, ios::app);
 	//	Distdata << DateTimeStr << ", " << _depthResult << ",\n";
@@ -111,6 +112,16 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	//cout << "Success: Depth data stored.\nDepth: " << distance << endl;
 	return 1;
 }
+
+void Depth::run(int& depthResult, mutex& lock)
+{
+	if (init() >= 0)
+	{
+		getDepth(depthResult, lock);
+		serClose(_uart);
+	}
+}
+
 
 void Depth::GetTime() 
 {

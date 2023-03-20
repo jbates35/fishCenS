@@ -219,7 +219,6 @@ int FishCenS::init(fcMode mode)
 	_ledPwmDC = _ledPwmMin;
 
 	//Initiate sensors - including serial for ultrasonic
-	_depthSerialOpen = _depthObj.init();
 	_currentDepth = -1;
 	_currentTemp = -1;
 
@@ -258,14 +257,8 @@ int FishCenS::_update()
 		{
 			_timers["depthTimer"] = _millis();
 
-			if (_depthSerialOpen > 0)
-			{
-				//_depthObj.getDepth(_currentDepth, _baseLock);
-				
-				std::thread depthThread(&Depth::getDepth, ref(_depthObj), ref(_currentDepth), ref(_depthLock));
-				depthThread.detach();
-
-			}
+			std::thread depthThread(&Depth::run, ref(_depthObj), ref(_currentDepth), ref(_depthLock));
+			depthThread.detach();
 
 		}
 	}

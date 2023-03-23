@@ -250,7 +250,7 @@ int FishCenS::_update()
 			_timers["tempTimer"] = _millis();
 			//Temperature::getTemperature(_currentTemp, _baseLock);
 			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));
-			_threadVector.push_back(move(temperatureThread));		
+			temperatureThread.detach();		
 		}
 
 		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
@@ -396,14 +396,14 @@ int FishCenS::_draw()
 		//Sensor strings to put on screen
 		{
 			//Lock depth lock guard
-			lock_guard<mutex> guard(_depthLock);
+			//lock_guard<mutex> guard(_depthLock);
 			string depthStr = "Depth: " + to_string(_currentDepth);
 			putText(_frameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 		}
 		
 		{
 			//Lock temp lock guard
-			lock_guard<mutex> guard(_tempLock);
+			//lock_guard<mutex> guard(_tempLock);
 			string tempStr = "Temperature: " + to_string(_currentTemp);
 			putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 		}

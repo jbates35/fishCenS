@@ -21,8 +21,8 @@ using namespace lccv;
 namespace _fc
 {
 	//Camera width and height
-	const int VIDEO_WIDTH	= 768; //px
-	const int VIDEO_HEIGHT	= 432; //px
+	const int VIDEO_WIDTH	= 768/2; //px
+	const int VIDEO_HEIGHT	= 432/2; //px
 	
 	//Gpio pins
 	const int LED_PIN	= 13; //Main LED (big flashy flash)

@@ -791,24 +791,37 @@ void FishCenS::_setLED()
 	{
 	}
 	
+
+// Lock frame to check lighing 
+	{	
+		lock_guard<mutex> lock(_frameLock);
+		if(_frame.data)
+		{
+			
+			cv::Mat grayMat;
+			cv::cvtColor(_frame, grayMat, cv::COLOR_RGB2GRAY);
+			// Stores the mean of the channels, since all gray only index 0 has value
+			Scalar gray_sc = mean(grayMat);
+			
+			//Calculate the amount of light in the frame
+			int lightAmt =gray_sc[0];
+			//
+			
+			//Map 255-lightAmt to LED_DEFAULT_PWM_MIN - LED_DEFAULT_PWM_MAX
+			_ledPwmDC = (255 - lightAmt) * (LED_DEFAULT_PWM_MAX - LED_DEFAULT_PWM_MIN) / 255 + LED_DEFAULT_PWM_MIN;
+			
+			//Set the PWM value of the gpioPin to pwmVal
+			gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
+		}
+		else{
+			_log("No data in frame");
+		}
+	}
+		
 	//Store the class's camera object into lightFrame
 	if (!_cam.getVideoFrame(lightFrame, 1000))
 	{
 		_log("Timeout error while initializing", true);
 	}
-	
-	//Calculate the amount of light in the frame
-	int lightAmt = 0;
-	//
-	//
-	//
-	//
-	//
-	
-	//Map 255-lightAmt to LED_DEFAULT_PWM_MIN - LED_DEFAULT_PWM_MAX
-	_ledPwmDC = (255 - lightAmt) * (LED_DEFAULT_PWM_MAX - LED_DEFAULT_PWM_MIN) / 255 + LED_DEFAULT_PWM_MIN;
-	
-	//Set the PWM value of the gpioPin to pwmVal
-	gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
 
 }

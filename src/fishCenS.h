@@ -181,6 +181,7 @@ private:
 	vector<thread> _threadVector;
 	mutex _baseLock, _sensorLock;
 	mutex _pwmLock;
+	mutex _frameLock; 
 	
 	//Logger stuff
 	vector<string> _fcLogger;

@@ -24,7 +24,7 @@ namespace _fc
 	const int VIDEO_WIDTH	= 768/2; //px
 	const int VIDEO_HEIGHT	= 432/2; //px
 	
-	const double LIGHT_REFRESH = 200; //ms
+	const double LIGHT_REFRESH = 1000 * 60 * 30; //ms (1000ms * 60s * 30min)
 	
 	//Gpio pins
 	const int LED_PIN	= 13; //Main LED (big flashy flash)

@@ -79,7 +79,7 @@ int FishCenS::init(fcMode mode)
 	_timers["drawTime"] = _millis();
 	_timers["depthTimer"] = _millis();
 	_timers["tempTimer"] = _millis();
-	_timers["ledTimer"] = _millis();
+	_timers["ledTimer"] = 0;
 
 	//Tracking and fish counting
 	_fishCount = 0;
@@ -242,8 +242,7 @@ int FishCenS::_update()
 {
 
 	//Set LED PWM (Will be where camera lighting -> PWM code goes)
-	//_setLED();
-	gpioHardwarePWM(LED_PIN, _ledPwmFreq, 1000000);
+	_setLED();
 
 	if (_mode == fcMode::TRACKING)
 	{

@@ -109,9 +109,13 @@ int FishCenS::init(fcMode mode)
 		}
 
 		//Load video frame, if timeout, restart while loop
-		if (!_cam.getVideoFrame(_frame, 1000))
 		{
-			_log("Timeout error while initializing", true);
+			lock_guard<mutex> lock(_pwmLock);
+
+			if (!_cam.getVideoFrame(_frame, 1000))
+			{
+				_log("Timeout error while initializing", true);
+			}
 		}
 
 		//If there's nothing in the video frame, also exit
@@ -216,7 +220,8 @@ int FishCenS::init(fcMode mode)
 	_ledPwmMin = LED_DEFAULT_PWM_MIN;
 	_ledPwmMax = LED_DEFAULT_PWM_MAX;
 	_ledPwmInt = LED_DEFAULT_PWM_INT;
-	_ledPwmDC = _ledPwmMin;
+	_ledPwmDC = (_ledPwmMin + _ledPwmMax) / 2;
+	gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
 
 	//Initiate sensors - including serial for ultrasonic
 	_currentDepth = -1;
@@ -782,16 +787,70 @@ int FishCenS::_showRectInfo(Mat& im)
 //Sets up PWM by seeing what amoutn of lightis in the cmaera and calibrates
 void FishCenS::_setLED()
 {
-	if(_millis() - _timers["ledTimer"] >= 400)
+	Mat lightFrame;
+	
+	if (_millis() - _timers["ledTimer"] <= LIGHT_REFRESH) 
 	{
-		_timers["ledTimer"] = _millis();
-		_ledPwmDC += LED_DEFAULT_PWM_INT;
+		std::cout << "LED Timer not ready yet \n";
+		return;
+	}
+	
+	_timers["ledTimer"] = _millis();
+		
+	//Store the class's camera object into lightFrame
+	{
+		lock_guard<mutex> lock(_pwmLock);
 
-		if(_ledPwmDC >= _ledPwmMax) 
+		gpioHardwarePWM(LED_PIN, _ledPwmFreq, 0);
+		
+		double thisTimer = _millis();
+
+		while(_millis() - thisTimer <= 300) 
 		{
-			_ledPwmDC = _ledPwmMin;
 		}
 
+		if (!_cam.getVideoFrame(lightFrame, 1000))
+		{
+			_log("Timeout error while initializing", true);
+		}
+
+		thisTimer = _millis();
+
+		while(_millis() - thisTimer <= 200) 
+		{
+		}
+	}
+
+	// Lock frame to check lighing 
+	{	
+		if(!lightFrame.empty())
+		{
+			cv::cvtColor(lightFrame, lightFrame, cv::COLOR_RGB2GRAY);
+			// Stores the mean of the channels, since all gray only index 0 has value
+			Scalar gray_sc = mean(lightFrame);
+			
+			//Calculate the amount of light in the frame
+			int lightAmt =gray_sc[0];
+			
+			lightAmt = sqrt(lightAmt) * 16;
+
+			std::cout << "Light amount is " << lightAmt << "\n";
+			
+			//Map 255-lightAmt to LED_DEFAULT_PWM_MIN - LED_DEFAULT_PWM_MAX
+			_ledPwmDC = (255 - lightAmt) * (LED_DEFAULT_PWM_MAX - LED_DEFAULT_PWM_MIN) / 255 + LED_DEFAULT_PWM_MIN;
+		
+			//Testing
+			//std::cout << "Success. LED PWM Value is " << _ledPwmDC << "\n";
+		}
+		else{
+			_log("No data in frame");
+			std::cout << "Not success. LED PWM Value is " << _ledPwmDC << "\n";
+		}
+
+		//Set the PWM value of the gpioPin to pwmVal
 		gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
 	}
+		
+
+
 }

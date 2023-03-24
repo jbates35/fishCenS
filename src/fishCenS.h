@@ -24,6 +24,8 @@ namespace _fc
 	const int VIDEO_WIDTH	= 768/2; //px
 	const int VIDEO_HEIGHT	= 432/2; //px
 	
+	const double LIGHT_REFRESH = 200; //ms
+	
 	//Gpio pins
 	const int LED_PIN	= 13; //Main LED (big flashy flash)
 	
@@ -177,9 +179,9 @@ private:
 	
 	//Mutex for threadlocking/threading
 	vector<thread> _threadVector;
-	mutex _baseLock;
-	mutex _tempLock;
-	mutex _depthLock;
+	mutex _baseLock, _sensorLock;
+	mutex _pwmLock;
+	mutex _frameLock; 
 	
 	//Logger stuff
 	vector<string> _fcLogger;

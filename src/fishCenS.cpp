@@ -790,7 +790,6 @@ void FishCenS::_setLED()
 	
 	if (_millis() - _timers["ledTimer"] <= LIGHT_REFRESH) 
 	{
-		std::cout << "LED Timer not ready yet \n";
 		return;
 	}
 	

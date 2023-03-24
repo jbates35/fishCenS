@@ -12,7 +12,8 @@ Depth::Depth()
 
 Depth::~Depth()
 {
-	serClose(_uart);
+	//serClose(_uart);
+
 	//	GetTime();
 	//	Distdata.open(filename, ios::app);
 	//	Distdata << DateTimeStr << ", " << _depthResult << ",\n";
@@ -62,6 +63,13 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	
 	while (true) {
 		
+		//Flush serial buffer by reading all bytes
+		while (serDataAvailable(_uart) > 0) 
+		{
+			//Read serial byte
+			serReadByte(_uart);
+		}
+		
 		while ((serDataAvailable(_uart) <= 3) && !_timeOut)  
 		{
 			_timeOut = (getTickCount() / getTickFrequency() - _startTimer) > UART_TIMEOUT;
@@ -104,6 +112,16 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	//cout << "Success: Depth data stored.\nDepth: " << distance << endl;
 	return 1;
 }
+
+void Depth::run(int& depthResult, mutex& lock)
+{
+	if (init() >= 0)
+	{
+		getDepth(depthResult, lock);
+		serClose(_uart);
+	}
+}
+
 
 void Depth::GetTime() 
 {

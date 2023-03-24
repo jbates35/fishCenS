@@ -61,4 +61,11 @@ public:
 	 **/
 	int distance();
 	
+	/**
+	* @brief Opens serial, gets depth, closes serial
+	* @param depthResult pointer to the result of the depth, gets updated when valid
+	* @param lock mutex pointer
+	*/
+	void run(int& depthResult, mutex& lock);
+
 };

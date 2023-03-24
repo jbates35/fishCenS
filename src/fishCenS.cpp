@@ -224,7 +224,6 @@ int FishCenS::init(fcMode mode)
 	gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
 
 	//Initiate sensors - including serial for ultrasonic
-	_depthSerialOpen = _depthObj.init();
 	_currentDepth = -1;
 	_currentTemp = -1;
 
@@ -243,7 +242,8 @@ int FishCenS::_update()
 {
 
 	//Set LED PWM (Will be where camera lighting -> PWM code goes)
-	_setLED();
+	//_setLED();
+	gpioHardwarePWM(LED_PIN, _ledPwmFreq, 1000000);
 
 	if (_mode == fcMode::TRACKING)
 	{
@@ -254,22 +254,16 @@ int FishCenS::_update()
 		{
 			_timers["tempTimer"] = _millis();
 			//Temperature::getTemperature(_currentTemp, _baseLock);
-			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_sensorLock));
-			_threadVector.push_back(move(temperatureThread));		
+			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));
+			temperatureThread.detach();		
 		}
 
 		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
 		{
 			_timers["depthTimer"] = _millis();
 
-			if (_depthSerialOpen > 0)
-			{
-				//_depthObj.getDepth(_currentDepth, _baseLock);
-				
-				std::thread depthThread(&Depth::getDepth, ref(_depthObj), ref(_currentDepth), ref(_sensorLock));
-				depthThread.detach();
-
-			}
+			std::thread depthThread(&Depth::run, ref(_depthObj), ref(_currentDepth), ref(_depthLock));
+			depthThread.detach();
 
 		}
 	}
@@ -405,11 +399,19 @@ int FishCenS::_draw()
 	if (_mode == fcMode::TRACKING)
 	{
 		//Sensor strings to put on screen
-		string depthStr = "Depth: " + to_string(_currentDepth);
-		string tempStr = "Temperature: " + to_string(_currentTemp);
-
-		putText(_frameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
-		putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		{
+			//Lock depth lock guard
+			//lock_guard<mutex> guard(_depthLock);
+			string depthStr = "Depth: " + to_string(_currentDepth);
+			putText(_frameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		}
+		
+		{
+			//Lock temp lock guard
+			//lock_guard<mutex> guard(_tempLock);
+			string tempStr = "Temperature: " + to_string(_currentTemp);
+			putText(_frameDraw, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		}
 	}
   
 	if (!_frameDraw.empty() && (_mode != fcMode::CALIBRATION && _mode != fcMode::CALIBRATION_WITH_VIDEO))

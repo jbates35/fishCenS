@@ -833,13 +833,13 @@ void FishCenS::_setLED()
 			
 			lightAmt = sqrt(lightAmt) * 16;
 
-			std::cout << "Light amount is " << lightAmt << "\n";
+			//std::cout << "Light amount is " << lightAmt << "\n";
 			
 			//Map 255-lightAmt to LED_DEFAULT_PWM_MIN - LED_DEFAULT_PWM_MAX
 			_ledPwmDC = (255 - lightAmt) * (LED_DEFAULT_PWM_MAX - LED_DEFAULT_PWM_MIN) / 255 + LED_DEFAULT_PWM_MIN;
 		
 			//Testing
-			//std::cout << "Success. LED PWM Value is " << _ledPwmDC << "\n";
+			std::cout << "Success. LED PWM Value is " << _ledPwmDC << "\n";
 		}
 		else{
 			_log("No data in frame");

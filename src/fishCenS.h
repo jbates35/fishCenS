@@ -180,8 +180,10 @@ private:
 	//Mutex for threadlocking/threading
 	vector<thread> _threadVector;
 	mutex _baseLock, _depthLock, _tempLock;
+	mutex _videoLock;
 	mutex _pwmLock;
 	mutex _frameLock; 
+	mutex _imgLock;
 	
 	//Logger stuff
 	vector<string> _fcLogger;

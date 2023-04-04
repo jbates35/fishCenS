@@ -110,8 +110,8 @@ int FishCenS::init(fcMode mode)
 
 		//Load video frame, if timeout, restart while loop
 		{
-			lock_guard<mutex> lock(_pwmLock);
-
+			scoped_lock lock(_videoLock, _pwmLock, _baseLock, _frameLock);
+			
 			if (!_cam.getVideoFrame(_frame, 1000))
 			{
 				_log("Timeout error while initializing", true);
@@ -290,6 +290,8 @@ int FishCenS::_update()
 	//Read camera
 	if (_mode == fcMode::TRACKING || _mode == fcMode::CALIBRATION || _mode == fcMode::VIDEO_RECORDER)
 	{
+		scoped_lock lock(_frameLock, _videoLock);
+		
 		//Load video frame, if timeout, restart while loop
 		if (!_cam.getVideoFrame(_frame, 1000))
 		{
@@ -301,6 +303,8 @@ int FishCenS::_update()
 	//Read video
 	if (_mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
+		scoped_lock lock(_frameLock);
+		
 		if ((_millis() - _timers["videoFrameTimer"]) < _vidPeriod)
 		{
 			return -1;
@@ -308,9 +312,12 @@ int FishCenS::_update()
 		_timers["videoFrameTimer"] = _millis();
 
 		//Load frame to do analysis
-		_vid >> _frame;
-
-		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
+		{
+			scoped_lock lock(_frameLock);
+			_vid >> _frame;
+			resize(_frame, _frame, Size(_videoWidth, _videoHeight));
+		}
+		
 		
 		_vidNextFramePos++;
 
@@ -326,6 +333,7 @@ int FishCenS::_update()
 	//Resize frames if in calibration mode so four images can sit in one easily
 	if (_mode == fcMode::CALIBRATION)// || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
+		scoped_lock lock(_frameLock);
 		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
 	}
 
@@ -333,7 +341,7 @@ int FishCenS::_update()
 	if (_mode != fcMode::VIDEO_RECORDER && !_frame.empty())
 	{
     //Remove bg, run tracker, do image processing
-		std::thread trackingThread(&FishTracker::run, ref(_fishTrackerObj), ref(_frame), ref(_returnMats), ref(_baseLock), ref(_fishCount), ref(_ROIRects));
+		std::thread trackingThread(&FishTracker::run, ref(_fishTrackerObj), ref(_frame), ref(_returnMats), ref(_frameLock), ref(_fishCount), ref(_ROIRects));
 		_threadVector.push_back(move(trackingThread));
 	}
 
@@ -363,7 +371,7 @@ int FishCenS::_draw()
 	//Get frameDraw prepared
 	if ((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
 	{
-		lock_guard<mutex> guard(_baseLock);
+		scoped_lock lock(_frameLock, _frameDrawLock);
     
 		//Show info about tracked objects
 		_showRectInfo(_returnMats[0].mat);
@@ -393,7 +401,7 @@ int FishCenS::_draw()
 
 	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::VIDEO_RECORDER)
 	{
-		lock_guard<mutex> guard(_baseLock);
+		scoped_lock lock(_frameDrawLock);
 
 		if (_returnMats.size() > 0) 
 		{
@@ -433,6 +441,7 @@ int FishCenS::_draw()
   
 	if (!_frameDraw.empty() && (_mode != fcMode::CALIBRATION && _mode != fcMode::CALIBRATION_WITH_VIDEO))
 	{
+		scoped_lock lock(_frameDrawLock);
 		imshow("Video", _frameDraw);
 	}
 	_returnKey = waitKey(1);
@@ -463,7 +472,7 @@ void FishCenS::_videoRun()
 	double vidTimer = getTickCount()/getTickFrequency();
 
 //init(Mat& frame, mutex& lock, double fps, string filePath /* = NULL */)
-	_vidRecord.init(_frame, _baseLock, 30);
+	_vidRecord.init(_frame, _videoLock, 30);
 
 	while(_returnKey != 's' || _returnKey != 'S')
 	{
@@ -471,7 +480,7 @@ void FishCenS::_videoRun()
 		if(getTickCount()/getTickFrequency() - vidTimer >= 1/30)
 		{	
 			vidTimer = getTickCount()/getTickFrequency();
-			_vidRecord.run(_frame, _baseLock);
+			_vidRecord.run(_frame, _videoLock);
 		}
 	}
 

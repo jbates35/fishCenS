@@ -352,7 +352,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 		}
 		
 		//Delete if timeout and isn't in center of screen
-		if (trackedObjectOutdated && !(_frameMiddle > _fishTracker[i].roi.x && _frameMiddle < _fishTracker[i].roi.x + _fishTracker[i].roi.width))
+		if (trackedObjectOutdated)// && !(_frameMiddle > _fishTracker[i].roi.x && _frameMiddle < _fishTracker[i].roi.x + _fishTracker[i].roi.width))
 		{
 			_fishTracker.erase(_fishTracker.begin() + i);
 			_logger(_loggerData, "TRACKING TIMEOUT FOR ELEMENT: " + to_string(i + 1));	

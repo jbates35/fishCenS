@@ -164,9 +164,11 @@ int FishCenS::init(fcMode mode)
 		_vidPeriod = 1000 / _vidFPS;
 
 		//Set class video width and height for tracker
-		_videoWidth = _frame.size().width;
-		_videoHeight = _frame.size().height;
-
+		_videoWidth = _frame.size().width/2;
+		_videoHeight = _frame.size().height/2;
+		
+		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
+		
 		//Keep track of frames during playback so it can be looped at last frame
 		_vidNextFramePos = 0;
 		_vidFramesTotal = _vid.get(CAP_PROP_FRAME_COUNT);
@@ -244,6 +246,20 @@ int FishCenS::_update()
 	//Set LED PWM (Will be where camera lighting -> PWM code goes)
 	_setLED();
 
+	
+	if(_mode == fcMode::VIDEO_RECORDER)
+	{
+		if(_returnKey=='r' or _returnKey == 'R')
+		{
+			_returnKey = '\0';
+
+			std::cout << "Record thread starting ... \n";
+			
+			thread recordThread(&FishCenS::_videoRunThread, this);
+			recordThread.detach();
+		}
+	}
+
 	if (_mode == fcMode::TRACKING)
 	{
 		//Start depth sensors thread every DEPTH_PERIOD
@@ -294,6 +310,8 @@ int FishCenS::_update()
 		//Load frame to do analysis
 		_vid >> _frame;
 
+		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
+		
 		_vidNextFramePos++;
 
 		//Loop video - Reset video to frame 0 if end of video is reached
@@ -306,7 +324,7 @@ int FishCenS::_update()
 	}
 
 	//Resize frames if in calibration mode so four images can sit in one easily
-	if (_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO)
+	if (_mode == fcMode::CALIBRATION)// || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
 		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
 	}
@@ -444,8 +462,12 @@ void FishCenS::_videoRun()
 {
 	double vidTimer = getTickCount()/getTickFrequency();
 
+//init(Mat& frame, mutex& lock, double fps, string filePath /* = NULL */)
+	_vidRecord.init(_frame, _baseLock, 30);
+
 	while(_returnKey != 's' || _returnKey != 'S')
 	{
+		
 		if(getTickCount()/getTickFrequency() - vidTimer >= 1/30)
 		{	
 			vidTimer = getTickCount()/getTickFrequency();

@@ -9,6 +9,7 @@
 #include <filesystem>
 #include <sstream>
 #include <regex>
+#include <mutex>
 
 namespace fs = std::filesystem;
 
@@ -87,6 +88,7 @@ int FishCenS::init(fcMode mode)
 
 	//Video stuff that needs to be initialized
 	_videoRecordState = vrMode::VIDEO_OFF;
+	_recordOn = false;
 
 	//Make sure no threads
 	_threadVector.clear();
@@ -251,6 +253,7 @@ int FishCenS::_update()
 	{
 		if(_returnKey=='r' or _returnKey == 'R')
 		{
+			_recordOn = true;
 			_returnKey = '\0';
 
 			std::cout << "Record thread starting ... \n";
@@ -446,6 +449,11 @@ int FishCenS::_draw()
 	}
 	_returnKey = waitKey(1);
 
+	if(_returnKey == 's' || _returnKey == 'S')
+	{
+		_recordOn = false;
+	}
+
 
 	return 1;
 }
@@ -474,13 +482,14 @@ void FishCenS::_videoRun()
 //init(Mat& frame, mutex& lock, double fps, string filePath /* = NULL */)
 	_vidRecord.init(_frame, _videoLock, 30);
 
-	while(_returnKey != 's' || _returnKey != 'S')
-	{
-		
+	while(_recordOn)
+	{		
 		if(getTickCount()/getTickFrequency() - vidTimer >= 1/30)
 		{	
+			scoped_lock lockGuard(_videoLock);
 			vidTimer = getTickCount()/getTickFrequency();
 			_vidRecord.run(_frame, _videoLock);
+			cout << "Record going..." << endl;
 		}
 	}
 

@@ -169,6 +169,7 @@ private:
 	vrMode _videoRecordState;
 	int _videoWidth;
 	int _videoHeight;
+	bool _recordOn;
 	
 	//Testing video playback
 	VideoCapture _vid;
@@ -179,7 +180,9 @@ private:
 	
 	//Mutex for threadlocking/threading
 	vector<thread> _threadVector;
-	mutex _baseLock, _depthLock, _tempLock;
+	mutex _baseLock;
+	mutex _depthLock;
+	mutex _tempLock;
 	mutex _videoLock;
 	mutex _pwmLock;
 	mutex _frameLock; 

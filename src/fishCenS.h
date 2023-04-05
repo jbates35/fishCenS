@@ -21,8 +21,8 @@ using namespace lccv;
 namespace _fc
 {
 	//Camera width and height
-	const int VIDEO_WIDTH	= 768/2; //px
-	const int VIDEO_HEIGHT	= 432/2; //px
+	const int VIDEO_WIDTH	= 768; //px
+	const int VIDEO_HEIGHT	= 432; //px
 	
 	const double LIGHT_REFRESH = 1000 * 60 * 30; //ms (1000ms * 60s * 30min)
 	
@@ -76,6 +76,8 @@ namespace _fc
 	const Scalar MAGENTA = Scalar(255, 0, 255);
 	const Scalar WHITE = Scalar(255, 255, 255);
 	const Scalar GREY = Scalar(180, 180, 180);
+
+	const string VIDEO_PATH = "./testVideos/";
 }
 
 enum class fcMode
@@ -86,8 +88,6 @@ enum class fcMode
 	CALIBRATION_WITH_VIDEO,
 	VIDEO_RECORDER
 };
-
-using namespace _fc;
 
 /**
  * @brief Main fishCenS runtime class

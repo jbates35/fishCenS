@@ -6,6 +6,7 @@
 #include <sstream>
 
 using namespace std;
+using namespace Temperature;
 
 void Temperature::getTemperature(double& temperature, mutex& lock) {
 

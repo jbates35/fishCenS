@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 
 using namespace std;
+using namespace _depth;
 
 Depth::Depth() 
 {
@@ -19,7 +20,6 @@ Depth::~Depth()
 	//	Distdata << DateTimeStr << ", " << _depthResult << ",\n";
 	//	Distdata.close();
 }
-
 
 int Depth::init()
 {

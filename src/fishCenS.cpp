@@ -12,11 +12,17 @@
 #include <mutex>
 
 namespace fs = std::filesystem;
+using namespace _fc;
 
 FishCenS::FishCenS()
 {
+	//Make sure video folder exists and change permissions to 777
+	if (!fs::exists(VIDEO_PATH))
+	{
+		fs::create_directory(VIDEO_PATH);
+		fs::permissions(VIDEO_PATH, fs::perms::all);
+	}
 }
-
 
 FishCenS::~FishCenS()
 {
@@ -65,6 +71,8 @@ int FishCenS::init(fcMode mode)
 	//Testing of parameters
 	_testing = false;
 
+	cout << "here1" << endl << "here2" << endl;
+	
 	//Mode of fishCenS object
 	_mode = mode;
 
@@ -166,8 +174,8 @@ int FishCenS::init(fcMode mode)
 		_vidPeriod = 1000 / _vidFPS;
 
 		//Set class video width and height for tracker
-		_videoWidth = _frame.size().width/2;
-		_videoHeight = _frame.size().height/2;
+		_videoWidth = _frame.size().width;
+		_videoHeight = _frame.size().height;
 		
 		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
 		
@@ -236,8 +244,6 @@ int FishCenS::init(fcMode mode)
 	//initialize frame to all black to start
 	_frame = Mat::zeros(Size(_videoWidth, _videoHeight), CV_8UC3);
 
-	std::cout << "We've come here.";
-	
 	return 1;
 }
 
@@ -246,8 +252,10 @@ int FishCenS::_update()
 {
 
 	//Set LED PWM (Will be where camera lighting -> PWM code goes)
-	_setLED();
-
+	if(_mode == fcMode::TRACKING)
+	{
+		_setLED();
+	}
 	
 	if(_mode == fcMode::VIDEO_RECORDER)
 	{
@@ -489,7 +497,7 @@ void FishCenS::_videoRun()
 		{	
 			if (!_vidRecord.isInRunFunc())
 			{				
-				cout << "Video record frame " << frameCount++ << " being recorded. \t Frame time: " << _millis() - vidTimer << "ms" << endl;
+				cout << "Video record frame " << frameCount++ << " being recorded. \t Frame time: " << _millis() - vidTimer << "ms" << '\r';
 				vidTimer = _millis();				
 				_vidRecord.run(_frame, _videoLock);	
 			}
@@ -516,6 +524,12 @@ int FishCenS::_getVideoEntry(string& selectionStr)
 	vector<string> videoFileNames;
 	for (const auto & entry : fs::directory_iterator(TEST_VIDEO_PATH))///fs::directory_iterator(TEST_VIDEO_PATH))
 	{
+		//Only add files that are .avi
+		if (entry.path().extension() == ".txt")
+		{
+			continue;
+		}
+
 		videoFileNames.push_back(entry.path());
 	}
 

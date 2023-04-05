@@ -26,9 +26,9 @@ enum class vrMode
 namespace _vr
 {
 	const int MAX_DATA_SIZE = 10000; // Max amount of info logger can contain	
-}
 
-using namespace _vr;
+	const string VIDEO_PATH = "./testVideos/";
+}
 
 class VideoRecord
 {

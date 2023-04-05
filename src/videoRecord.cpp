@@ -1,7 +1,18 @@
 #include "videoRecord.h"
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+using namespace _vr;
+
 VideoRecord::VideoRecord()
 {
+	//Make sure video folder exists and change permissions to 777
+	if (!fs::exists(VIDEO_PATH))
+	{
+		fs::create_directory(VIDEO_PATH);
+		fs::permissions(VIDEO_PATH, fs::perms::all);
+	}
 }
 
 VideoRecord::~VideoRecord()
@@ -65,7 +76,7 @@ void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* =
 	//Setup filepath and filenames, first
 	if (filePath == "")
 	{
-		_filePath = "./";
+		_filePath = VIDEO_PATH;
 	}
 	else
 	{

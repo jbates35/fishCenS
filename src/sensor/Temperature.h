@@ -13,7 +13,6 @@ namespace Temperature
 	void getTemperature(double& temperature, mutex& lock);  
 }
 
-using namespace Temperature;
 
 #endif // TEMPERATURE_H
 

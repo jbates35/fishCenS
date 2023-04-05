@@ -828,7 +828,7 @@ void FishCenS::_setLED()
 		
 	//Store the class's camera object into lightFrame
 	{
-		lock_guard<mutex> lock(_pwmLock);
+		scoped_lock guard (_pwmLock);
 
 		gpioHardwarePWM(LED_PIN, _ledPwmFreq, 0);
 		

@@ -63,10 +63,10 @@ namespace _fc
 	const double SENSOR_STRING_THICKNESS = 2;
 	
 	//LED PWM DC related
-	const int LED_DEFAULT_PWM_MIN = 100000;
-	const int LED_DEFAULT_PWM_MAX = 1000000;
-	const int LED_DEFAULT_PWM_INT = 100000;
-	const int DEFAULT_LED_FREQ = 1000000;
+	const int LED_DEFAULT_PWM_MIN = 200000;
+	const int LED_DEFAULT_PWM_MAX = 500000;
+	const int LED_DEFAULT_PWM_INT = 5000;
+	const int DEFAULT_LED_FREQ = 500;
 
 	const Scalar YELLOW = Scalar(0, 255, 255);
 	const Scalar GREEN = Scalar(0, 255, 0);
@@ -183,7 +183,7 @@ private:
 	mutex _videoLock;
 	mutex _pwmLock;
 	mutex _frameLock; 
-	mutex _imgLock;
+	mutex _frameDrawLock;
 	
 	//Logger stuff
 	vector<string> _fcLogger;

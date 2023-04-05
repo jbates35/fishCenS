@@ -14,6 +14,11 @@ VideoRecord::~VideoRecord()
 
 void VideoRecord::run(Mat& frame, mutex& lock)
 {		
+	{	
+		scoped_lock lockGuard (lock);
+		_isInRunFunc = true;
+	}
+	
 	//Exit function if video isn't open
 	if (!_video.isOpened())
 	{
@@ -26,7 +31,7 @@ void VideoRecord::run(Mat& frame, mutex& lock)
 		
 	//Mutex and record frame	
 	{
-		scoped_lock guard(lock);
+		scoped_lock lockGuard(lock);
 		writeFrame = frame.clone();
 	}	
 	
@@ -45,11 +50,17 @@ void VideoRecord::run(Mat& frame, mutex& lock)
 	
 	//Update frame count
 	_frameCount++;
+		
+	{	
+		scoped_lock lockGuard(lock);
+		_isInRunFunc = false;
+	}
 }
 
 void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* = NULL */)
 {	
 	_vrStatus = vrMode::VIDEO_SETUP;
+	_isInRunFunc = false;
 	
 	//Setup filepath and filenames, first
 	if (filePath == "")
@@ -93,7 +104,7 @@ void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* =
 	_frameCount = 0;
 	_frameTimer = getTickCount() / getTickFrequency();
 	
-	//Initailize video
+	//Initiailize video
 	{		
 		scoped_lock guard(lock);
 		_video.open(_filePath + _fileName + ".avi", codec, fps, videoSize, isColor);
@@ -148,6 +159,13 @@ void VideoRecord::close()
 vrMode VideoRecord::isOpen()
 {
 	return _vrStatus;
+}
+
+
+// Will be true if the run function is currently running
+bool VideoRecord::isInRunFunc()
+{
+	return _isInRunFunc;
 }
 
 std::string VideoRecord::_getTime()

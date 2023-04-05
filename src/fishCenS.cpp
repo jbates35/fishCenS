@@ -477,23 +477,29 @@ void FishCenS::_videoRecordUpdate()
 
 void FishCenS::_videoRun()
 {
-	double vidTimer = getTickCount()/getTickFrequency();
-
-//init(Mat& frame, mutex& lock, double fps, string filePath /* = NULL */)
+	double vidTimer = _millis();
+	int frameCount = 0;
+	
 	_vidRecord.init(_frame, _videoLock, 30);
-
+	cout << "Video thread starting..." << endl;
+	
 	while(_recordOn)
 	{		
-		if(getTickCount()/getTickFrequency() - vidTimer >= 1/30)
+		if (_millis() - vidTimer >= 1000 / 30) 
 		{	
 			scoped_lock lockGuard(_videoLock);
-			vidTimer = getTickCount()/getTickFrequency();
-			_vidRecord.run(_frame, _videoLock);
-			cout << "Record going..." << endl;
+			
+			if (!_vidRecord.isInRunFunc())
+			{
+				cout << "Video record frame " << frameCount++ << " being recorded" << endl;
+				vidTimer = _millis();				
+				_vidRecord.run(_frame, _videoLock);	
+			}
 		}
 	}
 
 	_vidRecord.close();
+	cout << "Video thread closing..." << endl;
 }
 
 int FishCenS::_getVideoEntry(string& selectionStr)

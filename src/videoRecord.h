@@ -70,6 +70,12 @@ public:
 	 **/
 	vrMode isOpen();
 	
+	/**
+	 * @brief Tells parent thread whether a thread with run method can be instantiated
+	 * @return True if video is writing to frame
+	 **/
+	bool isInRunFunc();
+	
 private:
 	//////////// PARAMETERS ///////////
 	
@@ -78,6 +84,7 @@ private:
 	int _frameCount;
 	double _frameTimer;
 	vector<double> _frameTimes; 
+	bool _isInRunFunc; // This variable gets set to true when the run method starts, and false when it ends.
 	
 	//File related
 	string _fileName;

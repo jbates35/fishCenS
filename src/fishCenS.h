@@ -21,8 +21,9 @@ using namespace lccv;
 namespace _fc
 {
 	//Camera width and height
-	const int VIDEO_WIDTH	= 768/2; //px
-	const int VIDEO_HEIGHT	= 432/2; //px
+	const int VIDEO_WIDTH	= 768; //px
+	const int VIDEO_HEIGHT	= 432; //px
+	const double VIDEO_SCALE_FACTOR = 0.5;
 	
 	const double LIGHT_REFRESH = 1000 * 60 * 30; //ms (1000ms * 60s * 30min)
 	
@@ -37,7 +38,7 @@ namespace _fc
 	const int MAX_LOG_SIZE	= 5000; //Max amount of lines the logger can have before erasing start
 	
 	//For timers (typically in milliseconds)
-	const double DRAW_FPS = 30; //FPS of opencv imshow
+	const double DRAW_FPS = 15; //FPS of opencv imshow
 	const double DRAW_PERIOD = 1000 / DRAW_FPS; //Period of opencv imshow in milliseconds
 	
 	const double DEPTH_PERIOD = 2000; //2000 //ms
@@ -63,10 +64,10 @@ namespace _fc
 	const double SENSOR_STRING_THICKNESS = 2;
 	
 	//LED PWM DC related
-	const int LED_DEFAULT_PWM_MIN = 100000;
-	const int LED_DEFAULT_PWM_MAX = 1000000;
-	const int LED_DEFAULT_PWM_INT = 100000;
-	const int DEFAULT_LED_FREQ = 1000000;
+	const int LED_DEFAULT_PWM_MIN = 200000;
+	const int LED_DEFAULT_PWM_MAX = 500000;
+	const int LED_DEFAULT_PWM_INT = 5000;
+	const int DEFAULT_LED_FREQ = 500;
 
 	const Scalar YELLOW = Scalar(0, 255, 255);
 	const Scalar GREEN = Scalar(0, 255, 0);
@@ -76,6 +77,8 @@ namespace _fc
 	const Scalar MAGENTA = Scalar(255, 0, 255);
 	const Scalar WHITE = Scalar(255, 255, 255);
 	const Scalar GREY = Scalar(180, 180, 180);
+
+	const string VIDEO_PATH = "./testVideos/";
 }
 
 enum class fcMode
@@ -86,8 +89,6 @@ enum class fcMode
 	CALIBRATION_WITH_VIDEO,
 	VIDEO_RECORDER
 };
-
-using namespace _fc;
 
 /**
  * @brief Main fishCenS runtime class
@@ -169,6 +170,7 @@ private:
 	vrMode _videoRecordState;
 	int _videoWidth;
 	int _videoHeight;
+	bool _recordOn;
 	
 	//Testing video playback
 	VideoCapture _vid;
@@ -179,9 +181,13 @@ private:
 	
 	//Mutex for threadlocking/threading
 	vector<thread> _threadVector;
-	mutex _baseLock, _depthLock, _tempLock;
+	mutex _baseLock;
+	mutex _depthLock;
+	mutex _tempLock;
+	mutex _videoLock;
 	mutex _pwmLock;
 	mutex _frameLock; 
+	mutex _frameDrawLock;
 	
 	//Logger stuff
 	vector<string> _fcLogger;

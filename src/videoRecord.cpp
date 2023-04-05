@@ -1,7 +1,18 @@
 #include "videoRecord.h"
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+using namespace _vr;
+
 VideoRecord::VideoRecord()
 {
+	//Make sure video folder exists and change permissions to 777
+	if (!fs::exists(VIDEO_PATH))
+	{
+		fs::create_directory(VIDEO_PATH);
+		fs::permissions(VIDEO_PATH, fs::perms::all);
+	}
 }
 
 VideoRecord::~VideoRecord()
@@ -14,7 +25,10 @@ VideoRecord::~VideoRecord()
 
 void VideoRecord::run(Mat& frame, mutex& lock)
 {		
-	lock_guard<mutex> guard(lock);	
+	{	
+		scoped_lock lockGuard (lock);
+		_isInRunFunc = true;
+	}
 	
 	//Exit function if video isn't open
 	if (!_video.isOpened())
@@ -24,11 +38,18 @@ void VideoRecord::run(Mat& frame, mutex& lock)
 		return;
 	}
 	
-	//Mutex and record frame	
 	Mat writeFrame;
-	frame.copyTo(writeFrame);	
-	_video.write(writeFrame);	
 		
+	//Mutex and record frame	
+	{
+		scoped_lock lockGuard(lock);
+		writeFrame = frame.clone();
+	}	
+	
+	
+	// Write frame to video
+	_video.write(writeFrame);	
+	
 	//Update timer information
 	if (_frameTimes.size() > MAX_DATA_SIZE)
 	{
@@ -40,19 +61,22 @@ void VideoRecord::run(Mat& frame, mutex& lock)
 	
 	//Update frame count
 	_frameCount++;
+		
+	{	
+		scoped_lock lockGuard(lock);
+		_isInRunFunc = false;
+	}
 }
 
 void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* = NULL */)
 {	
 	_vrStatus = vrMode::VIDEO_SETUP;
-
-	//Mutex and record frame
-	lock_guard<mutex> guard(lock);
+	_isInRunFunc = false;
 	
 	//Setup filepath and filenames, first
 	if (filePath == "")
 	{
-		_filePath = "./";
+		_filePath = VIDEO_PATH;
 	}
 	else
 	{
@@ -69,10 +93,15 @@ void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* =
 	_fileName = _getTime();
 
 	//Create video parameters
+	Size videoSize;
+	bool isColor;
 	int codec = VideoWriter::fourcc('M', 'J', 'P', 'G');
-	bool isColor = (frame.type() == CV_8UC3);
-	Size videoSize = frame.size();
-
+	{
+		scoped_lock guard(lock);
+		isColor = (frame.type() == CV_8UC3);
+		videoSize = frame.size();
+	}
+	
 	_log("Starting video...", true);
 	_log("\t>>Video name is " + _fileName, true);
 	_log("\t>>Theoretical frame rate is " + to_string(fps) + "fps", true);
@@ -86,9 +115,11 @@ void VideoRecord::init(Mat& frame, mutex& lock, double fps, string filePath /* =
 	_frameCount = 0;
 	_frameTimer = getTickCount() / getTickFrequency();
 	
-	//Initailize video
-	_video.open(_filePath + _fileName + ".avi", codec, fps, videoSize, isColor);
-	
+	//Initiailize video
+	{		
+		scoped_lock guard(lock);
+		_video.open(_filePath + _fileName + ".avi", codec, fps, videoSize, isColor);
+	}
 	_vrStatus = vrMode::VIDEO_ON;
 	
 }
@@ -139,6 +170,13 @@ void VideoRecord::close()
 vrMode VideoRecord::isOpen()
 {
 	return _vrStatus;
+}
+
+
+// Will be true if the run function is currently running
+bool VideoRecord::isInRunFunc()
+{
+	return _isInRunFunc;
 }
 
 std::string VideoRecord::_getTime()

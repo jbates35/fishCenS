@@ -21,7 +21,7 @@ using namespace std;
 #define DEFAULT_COMBINED_RECT_AREA 0
 
 //Default region of ROI 
-#define DEFAULT_RECT_SCALE 1.4
+#define DEFAULT_RECT_SCALE 1.7
 
 //Proportional margin of the camera frame that will be 
 #define DEFAULT_MARGIN 0.1
@@ -81,7 +81,7 @@ namespace _ft
 	const int EXTRA_REFLECT_WIDTH = 10;
 	
 	//Amount of time tracker can last before deleting object
-	const double TRACKER_TIMEOUT_MILLIS = 10000;
+	const double TRACKER_TIMEOUT_MILLIS = 3000;
 		
 	//Struct keeping track of parameters of fish
 	struct FishTrackerStruct

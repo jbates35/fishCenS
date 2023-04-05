@@ -17,7 +17,6 @@ namespace _depth
 	const double UART_TIMEOUT = 1.0; //in seconds, timeout for reading uart bus
 }
 
-using namespace _depth;
 
 class Depth {
 

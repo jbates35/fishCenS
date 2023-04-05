@@ -133,7 +133,7 @@ int FishCenS::init(fcMode mode)
 
 		_log("Camera found. Size of camera is: ", true);
 		_log("\t>> Width: " + to_string(_videoWidth) + "px", true);
-		_log("\t>> Width: " + to_string(_videoHeight) + "px", true);
+		_log("\t>> Height: " + to_string(_videoHeight) + "px", true);
 		_log("Frame rate of camera is: " + to_string(_cam.options->framerate) + "fps", true);
 	}
 
@@ -177,7 +177,7 @@ int FishCenS::init(fcMode mode)
 
 		_log("Selecting video \"" + selectedVideoFile + "\"", true);
 		_log("\t>> Width: " + to_string(_videoWidth) + "px", true);
-		_log("\t>> Width: " + to_string(_videoHeight) + "px", true);
+		_log("\t>> Height: " + to_string(_videoHeight) + "px", true);
 		_log("\t>> Frame rate: " + to_string(_vidFPS) + "fps", true);
 	}
 
@@ -487,11 +487,9 @@ void FishCenS::_videoRun()
 	{		
 		if (_millis() - vidTimer >= 1000 / 30) 
 		{	
-			scoped_lock lockGuard(_videoLock);
-			
 			if (!_vidRecord.isInRunFunc())
-			{
-				cout << "Video record frame " << frameCount++ << " being recorded" << endl;
+			{				
+				cout << "Video record frame " << frameCount++ << " being recorded. \t Frame time: " << _millis() - vidTimer << "ms" << endl;
 				vidTimer = _millis();				
 				_vidRecord.run(_frame, _videoLock);	
 			}

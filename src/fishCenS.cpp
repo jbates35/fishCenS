@@ -136,8 +136,8 @@ int FishCenS::init(fcMode mode)
 		}
 
 		//Set class video width and height for tracker
-		_videoWidth = _frame.size().width;
-		_videoHeight = _frame.size().height;
+		_videoWidth = _frame.size().width * VIDEO_SCALE_FACTOR;
+		_videoHeight = _frame.size().height * VIDEO_SCALE_FACTOR;
 
 		_log("Camera found. Size of camera is: ", true);
 		_log("\t>> Width: " + to_string(_videoWidth) + "px", true);
@@ -174,8 +174,8 @@ int FishCenS::init(fcMode mode)
 		_vidPeriod = 1000 / _vidFPS;
 
 		//Set class video width and height for tracker
-		_videoWidth = _frame.size().width;
-		_videoHeight = _frame.size().height;
+		_videoWidth = _frame.size().width * VIDEO_SCALE_FACTOR;
+		_videoHeight = _frame.size().height * VIDEO_SCALE_FACTOR;
 		
 		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
 		
@@ -314,8 +314,6 @@ int FishCenS::_update()
 	//Read video
 	if (_mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
-		scoped_lock lock(_frameLock);
-		
 		if ((_millis() - _timers["videoFrameTimer"]) < _vidPeriod)
 		{
 			return -1;
@@ -326,7 +324,6 @@ int FishCenS::_update()
 		{
 			scoped_lock lock(_frameLock);
 			_vid >> _frame;
-			resize(_frame, _frame, Size(_videoWidth, _videoHeight));
 		}
 		
 		
@@ -338,11 +335,10 @@ int FishCenS::_update()
 			_vidNextFramePos = 0;
 			_vid.set(CAP_PROP_POS_FRAMES, 0);
 		}
-
 	}
 
-	//Resize frames if in calibration mode so four images can sit in one easily
-	if (_mode == fcMode::CALIBRATION)// || _mode == fcMode::CALIBRATION_WITH_VIDEO)
+	//Resize frame
+	if(_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
 		scoped_lock lock(_frameLock);
 		resize(_frame, _frame, Size(_videoWidth, _videoHeight));

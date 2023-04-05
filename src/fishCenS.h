@@ -23,6 +23,7 @@ namespace _fc
 	//Camera width and height
 	const int VIDEO_WIDTH	= 768; //px
 	const int VIDEO_HEIGHT	= 432; //px
+	const double VIDEO_SCALE_FACTOR = 0.5;
 	
 	const double LIGHT_REFRESH = 1000 * 60 * 30; //ms (1000ms * 60s * 30min)
 	

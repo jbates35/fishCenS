@@ -50,14 +50,14 @@ int FishCenS::run()
 {
 	while (_returnKey != 27)
 	{
-		_update();
-		_draw();
+		// _update();
+		// _draw();
 
-//		thread updateThread(&FishCenS::_updateThreadStart, this);
-//		thread drawThread(&FishCenS::_drawThreadStart, this);
-//
-//		updateThread.join();
-//		drawThread.join();
+		thread updateThread(&FishCenS::_updateThreadStart, this);
+		thread drawThread(&FishCenS::_drawThreadStart, this);
+
+		updateThread.join();
+		drawThread.join();
 	}
 
 	//Temporary - save log file

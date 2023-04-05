@@ -38,7 +38,7 @@ namespace _fc
 	const int MAX_LOG_SIZE	= 5000; //Max amount of lines the logger can have before erasing start
 	
 	//For timers (typically in milliseconds)
-	const double DRAW_FPS = 30; //FPS of opencv imshow
+	const double DRAW_FPS = 15; //FPS of opencv imshow
 	const double DRAW_PERIOD = 1000 / DRAW_FPS; //Period of opencv imshow in milliseconds
 	
 	const double DEPTH_PERIOD = 2000; //2000 //ms

@@ -16,6 +16,13 @@ using namespace _fc;
 
 FishCenS::FishCenS()
 {
+	//Make sure logger path exists 
+	if(!fs::exists(LOGGER_PATH))
+	{
+		fs::create_directory(LOGGER_PATH);
+		fs::permissions(LOGGER_PATH, fs::perms::all);
+	}
+
 	//Make sure video folder exists and change permissions to 777
 	if (!fs::exists(VIDEO_PATH))
 	{

@@ -22,6 +22,22 @@ FishCenS::FishCenS()
 		fs::create_directory(VIDEO_PATH);
 		fs::permissions(VIDEO_PATH, fs::perms::all);
 	}
+	
+	//Make sure picture folder exists and change permissions
+	if (!fs::exists(PIC_BASE_PATH))
+	{	
+		fs::create_directory(PIC_BASE_PATH);
+		fs::permissions(PIC_BASE_PATH, fs::perms::all);		
+	}
+	
+	_currentDate = _getDate();
+	_picFolderPath = PIC_BASE_PATH + _currentDate + "/";
+	
+	if (!fs::exists(_picFolderPath))
+	{
+		fs::create_directory(_picFolderPath);
+		fs::permissions(_picFolderPath, fs::perms::all);		
+	}	
 }
 
 FishCenS::~FishCenS()
@@ -92,6 +108,7 @@ int FishCenS::init(fcMode mode)
 
 	//Tracking and fish counting
 	_fishCount = 0;
+	_fishCountPrev = 0;
 	_fishTrackerObj.init(VIDEO_WIDTH, VIDEO_HEIGHT);
 
 	//Video stuff that needs to be initialized
@@ -359,6 +376,33 @@ int FishCenS::_update()
 		{
 			thr.join();
 		}
+	}
+	
+	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO)
+	{
+		//Check to make sure we still have the correct date
+		if (_currentDate != _getDate())
+		{
+			_currentDate = _getDate();
+			_picFolderPath = PIC_BASE_PATH + _currentDate + "/";
+	
+			if (!fs::exists(_picFolderPath))
+			{
+				fs::create_directory(_picFolderPath);
+				fs::permissions(_picFolderPath, fs::perms::all);		
+			}	
+		}	
+	
+		if (_fishCount != _fishCountPrev)
+		{
+			//Get current time for recording picture
+			string picTime = _getTime();
+		
+			//Save the frame as a picture in the current date folder
+			imwrite(_picFolderPath + picTime + ".jpg", _frame);
+		
+			_fishCountPrev = _fishCount;
+		}	
 	}
 
 	return 1;
@@ -706,6 +750,37 @@ string FishCenS::_getTime()
 	return timestamp.str();
 }
 
+string FishCenS::_getDate()
+{
+	//Create unique timestamp for folder
+	stringstream timestamp;
+
+	//First, create struct which contains time values
+	time_t now = time(0);
+	tm *ltm = localtime(&now);
+
+	//Store stringstream with numbers
+	timestamp << 1900 + ltm->tm_year << "_";
+
+	//Zero-pad month
+	if ((1 + ltm->tm_mon) < 10)
+	{
+		timestamp << "0";
+	}
+
+	timestamp << 1 + ltm->tm_mon << "_";
+
+	//Zero-pad day
+	if ((1 + ltm->tm_mday) < 10)
+	{
+		timestamp << "0";
+	}
+
+	timestamp << ltm->tm_mday;
+
+	//Return string version of ss
+	return timestamp.str();
+}
 
 double FishCenS::_millis()
 {

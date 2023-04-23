@@ -79,6 +79,7 @@ namespace _fc
 	const Scalar GREY = Scalar(180, 180, 180);
 
 	const string VIDEO_PATH = "./testVideos/";
+	const string PIC_BASE_PATH = "./fishPictures/";
 }
 
 enum class fcMode
@@ -193,6 +194,10 @@ private:
 	vector<string> _fcLogger;
 	string _logFileName;
 	
+	//For data collection
+	string _picFolderPath;
+	string _currentDate;
+	
 	//Timers
 	map<string, double> _timers;
 	
@@ -236,6 +241,7 @@ private:
 		
 	//General helper functions
 	static string _getTime(); // Returns time (this is used in a few diff classes, maybe it should be deferred to a separate helper file?)
+	static string _getDate(); // Returns date
 	static double _millis(); //Returns ms to be used with getTickCount/getTickFreq
 	void _log(string data, bool outputToScreen = false); //Writes to log vector, outputs to screen if need be
 	int _saveLogFile(); //Ensures data folder exists and saves log file there 

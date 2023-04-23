@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.6)
 project(fishCenS)
 
 set (CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 cmake_policy(SET CMP0079 NEW)
 
 #include directories as required

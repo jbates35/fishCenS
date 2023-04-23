@@ -156,7 +156,7 @@ private:
 	//Tracking params
 	FishTracker _fishTrackerObj; // Overall tracker
 	vector<Rect> _ROIRects; //Needs opencv4.5+ - rects that show ROIs of tracked objects for putting on screen
-	int _fishCount; 
+	int _fishCount,_fishCountPrev; 
 	double _scaleFactor; //For calibration mode only
 
 	//Imaging (Camera and mats)

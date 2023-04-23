@@ -24,7 +24,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	
 	{
 		//Make automatic mutex control
-		lock_guard<mutex> guard(lock);
+		scoped_lock guard(lock);
 
 		//Make sure there's actually a frame to do something with
 		if (im.empty())
@@ -36,16 +36,15 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 		//Clear mats that will be returned
 		returnMats.clear();
 		
-		//First, get mask of image...
-		_pBackSub->apply(im, frameMask);
-
-		im.copyTo(frameRaw);
-
-		//Copy only parts of the image that moved
-		im.copyTo(frameNoBG, frameMask);
-		
-		cvtColor(frameRaw, frameGrayscale, COLOR_BGR2GRAY);
+		frameRaw = im.clone();
 	}
+	//First, get mask of image...
+	_pBackSub->apply(frameRaw, frameMask);
+
+	//Copy only parts of the image that moved
+	frameRaw.copyTo(frameNoBG, frameMask);
+	
+	//cvtColor(frameRaw, frameGrayscale, COLOR_BGR2GRAY);
 
 	//Get time for measuring elapsed tracking time
 	_timer = _millis();
@@ -271,7 +270,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 				tempTracker.tracker = TrackerKCF::create();					
 				tempTracker.tracker->init(frameRaw, contourRectROI);
 				tempTracker.roi = contourRectROI;
-				tempTracker.posX.push_back(contourRectROI.x);
+				tempTracker.posX.push_back(contourRectROI.x + contourRectROI.width/2);
 				tempTracker.lostFrameCount = 0;
 				tempTracker.startTime = _millis();
 				tempTracker.currentTime = _millis() - tempTracker.startTime;

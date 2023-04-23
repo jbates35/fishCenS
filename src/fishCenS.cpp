@@ -50,14 +50,14 @@ int FishCenS::run()
 {
 	while (_returnKey != 27)
 	{
-		// _update();
-		// _draw();
+		_update();
+		_draw();
 
-		thread updateThread(&FishCenS::_updateThreadStart, this);
-		thread drawThread(&FishCenS::_drawThreadStart, this);
+		// thread updateThread(&FishCenS::_updateThreadStart, this);
+		// thread drawThread(&FishCenS::_drawThreadStart, this);
 
-		updateThread.join();
-		drawThread.join();
+		// updateThread.join();
+		// drawThread.join();
 	}
 
 	//Temporary - save log file
@@ -330,7 +330,7 @@ int FishCenS::_update()
 		_vidNextFramePos++;
 
 		//Loop video - Reset video to frame 0 if end of video is reached
-		if (_vidNextFramePos > _vidFramesTotal)
+		if (_vidNextFramePos >= _vidFramesTotal)
 		{
 			_vidNextFramePos = 0;
 			_vid.set(CAP_PROP_POS_FRAMES, 0);

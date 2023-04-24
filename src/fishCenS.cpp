@@ -1,5 +1,7 @@
 #include "fishCenS.h"
 
+#include "misc/fcFuncs.h"
+
 #include <fstream>
 #include <cstdlib>
 #include <ctime>
@@ -93,8 +95,6 @@ int FishCenS::init(fcMode mode)
 {	
 	//Testing of parameters
 	_testing = false;
-
-	cout << "here1" << endl << "here2" << endl;
 	
 	//Mode of fishCenS object
 	_mode = mode;
@@ -268,6 +268,12 @@ int FishCenS::init(fcMode mode)
 	//initialize frame to all black to start
 	_frame = Mat::zeros(Size(_videoWidth, _videoHeight), CV_8UC3);
 
+	//Load sql database
+	if(_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO)
+	{
+		_sqlObj.init();
+	}
+
 	return 1;
 }
 
@@ -404,11 +410,27 @@ int FishCenS::_update()
 		{
 			//Get current time for recording picture
 			string picTime = _getTime();
+			string filename = _picFolderPath + picTime + ".jpg";
 		
 			//Save the frame as a picture in the current date folder
-			imwrite(_picFolderPath + picTime + ".jpg", _frame);
+			imwrite(filename, _frame);
 		
 			_fishCountPrev = _fishCount;
+
+			string sqlDate, sqlTime;
+
+			//Get current date and time for sql database
+			_fcfuncs::parseDateTime(picTime, sqlDate, sqlTime);
+
+			//Save to sql database
+			_fcDatabase::fishCounterData counterData;
+			counterData.date = sqlDate;
+			counterData.time = sqlTime;
+			counterData.count = _fishCount;
+			counterData.direction = 'R';
+			counterData.filename = filename;
+
+			_sqlObj.insertFishCounterData(counterData);
 		}	
 	}
 

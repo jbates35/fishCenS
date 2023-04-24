@@ -13,6 +13,7 @@
 #include "sensor/Temperature.h"
 #include "gui/gui.h"
 #include "gui/imex.h"
+#include "database/sqlManager.h"
 
 using namespace std;
 using namespace cv;
@@ -209,6 +210,9 @@ private:
 	
 	//Trackbars and GUI stuff
   	gui _gui_object;
+
+	//Sql database
+	sqlManager _sqlObj;
 	
 	////////////// METHODS //////////////
 	

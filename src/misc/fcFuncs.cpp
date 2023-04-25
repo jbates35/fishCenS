@@ -1,6 +1,5 @@
 #include "fcFuncs.h"
 
-#include <string>
 #include <sstream>
 #include <chrono>
 #include <fstream>
@@ -28,7 +27,6 @@ void _fcfuncs::parseDateTime(std::string timestamp, std::string &date, std::stri
         if(i < 3)
         {
             tempDate += token;
-
             if(i < 2) tempDate += "-";
         }
         else 

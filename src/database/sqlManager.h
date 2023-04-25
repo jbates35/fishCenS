@@ -4,8 +4,10 @@
 #include <pqxx/pqxx>
 
 #include <vector>
+#include <opencv2/opencv.hpp>
 
 using namespace std;
+using namespace cv;
 
 namespace _fcDatabase
 {
@@ -25,7 +27,8 @@ namespace _fcDatabase
         string time;
         string filename;
         char direction;
-        int count;
+        int count; //should delete this
+        Rect roi;
     };
 }
 
@@ -46,5 +49,4 @@ private:
     pqxx::connection *C;
     pqxx::work *W;
     bool _isConnected;
-
 };

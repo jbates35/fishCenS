@@ -17,47 +17,39 @@ namespace fs = std::filesystem;
 using namespace _fc;
 
 FishCenS::FishCenS()
-{
-	//Make sure logger path exists 
-	if(!fs::exists(LOGGER_PATH))
-	{
-		fs::create_directory(LOGGER_PATH);
-		fs::permissions(LOGGER_PATH, fs::perms::all);
-	}
-
-	//Make sure video folder exists and change permissions to 777
-	if (!fs::exists(VIDEO_PATH))
-	{
-		fs::create_directory(VIDEO_PATH);
-		fs::permissions(VIDEO_PATH, fs::perms::all);
-	}
-	
-	//Make sure picture folder exists and change permissions
-	if (!fs::exists(PIC_BASE_PATH))
-	{	
-		fs::create_directory(PIC_BASE_PATH);
-		fs::permissions(PIC_BASE_PATH, fs::perms::all);		
-	}
-	
-	_currentDate = _getDate();
+{	
+	_currentDate = _fcfuncs::getDate();
 	_picFolderPath = PIC_BASE_PATH + _currentDate + "/";
-	
-	if (!fs::exists(_picFolderPath))
+
+	//Create directories if they don't exist and set permissions so files can be written to them later
+	vector<string> _directoryNames = {
+		LOGGER_PATH,
+		VIDEO_PATH,
+		PIC_BASE_PATH,
+		_picFolderPath
+	};
+
+	for(auto x : _directoryNames)
 	{
-		fs::create_directory(_picFolderPath);
-		fs::permissions(_picFolderPath, fs::perms::all);		
-	}	
+		if(!fs::exists(x))
+		{
+			fs::create_directory(x);
+			fs::permissions(x, fs::perms::all);
+		}
+	}
 }
 
 FishCenS::~FishCenS()
 {
-	_log("Closing stream...");
+	_fcfuncs::writeLog(_fcLogger, "Closing stream...");
 	destroyAllWindows();
 	_cam.stopVideo();
 
 	//Turn LED off
 	gpioSetMode(LED_PIN, PI_OUTPUT);
 	gpioWrite(LED_PIN, 0);
+
+	_fcfuncs::saveLogFile(_fcLogger, _logFileName, LOGGER_PATH);
 }
 
 /**
@@ -85,9 +77,6 @@ int FishCenS::run()
 		// drawThread.join();
 	}
 
-	//Temporary - save log file
-	_saveLogFile();
-
 	return 1;
 }
 
@@ -103,14 +92,13 @@ int FishCenS::init(fcMode mode)
 	_returnKey = '\0';
 
 	//Load filename and filepath
-	_logFileName = _getTime();
+	_logFileName = _fcfuncs::getTimeStamp();
 
 	//Clear timers and load start timer
 	_timers.clear();
-	_timers["runTime"] = _millis();
-	_timers["drawTime"] = _millis();
-	_timers["depthTimer"] = _millis();
-	_timers["tempTimer"] = _millis();
+	_timers["runTime"] = _fcfuncs::millis();
+	_timers["drawTime"] = _fcfuncs::millis();
+	_timers["sensorTimer"] = _fcfuncs::millis();
 	_timers["ledTimer"] = 0;
 
 	//Tracking and fish counting
@@ -136,9 +124,9 @@ int FishCenS::init(fcMode mode)
 		_cam.startVideo();
 
 		//Allow camera time to figure itself out
-		_log("Attempting to start camera. Sleeping for " + to_string(SLEEP_TIMER) + "ms", true);
-		double camTimer = _millis();
-		while((_millis() - camTimer) < SLEEP_TIMER)
+		_fcfuncs::writeLog(_fcLogger, "Attempting to start camera. Sleeping for " + to_string(SLEEP_TIMER) + "ms", true);
+		double camTimer = _fcfuncs::millis();
+		while((_fcfuncs::millis() - camTimer) < SLEEP_TIMER)
 		{
 		}
 
@@ -148,14 +136,14 @@ int FishCenS::init(fcMode mode)
 			
 			if (!_cam.getVideoFrame(_frame, 1000))
 			{
-				_log("Timeout error while initializing", true);
+				_fcfuncs::writeLog(_fcLogger, "Timeout error while initializing", true);
 			}
 		}
 
 		//If there's nothing in the video frame, also exit
 		if (_frame.empty())
 		{
-			_log("Camera doesn't work, frame empty", true);
+			_fcfuncs::writeLog(_fcLogger, "Camera doesn't work, frame empty", true);
 			return -1;
 		}
 
@@ -163,10 +151,10 @@ int FishCenS::init(fcMode mode)
 		_videoWidth = _frame.size().width * VIDEO_SCALE_FACTOR;
 		_videoHeight = _frame.size().height * VIDEO_SCALE_FACTOR;
 
-		_log("Camera found. Size of camera is: ", true);
-		_log("\t>> Width: " + to_string(_videoWidth) + "px", true);
-		_log("\t>> Height: " + to_string(_videoHeight) + "px", true);
-		_log("Frame rate of camera is: " + to_string(_cam.options->framerate) + "fps", true);
+		_fcfuncs::writeLog(_fcLogger, "Camera found. Size of camera is: ", true);
+		_fcfuncs::writeLog(_fcLogger, "\t>> Width: " + to_string(_videoWidth) + "px", true);
+		_fcfuncs::writeLog(_fcLogger, "\t>> Height: " + to_string(_videoHeight) + "px", true);
+		_fcfuncs::writeLog(_fcLogger, "Frame rate of camera is: " + to_string(_cam.options->framerate) + "fps", true);
 	}
 
 	//Initiate test video file
@@ -176,9 +164,9 @@ int FishCenS::init(fcMode mode)
 		//ALLOW USER TO CHOOSE THE FILE THEYD LIKE TO SEE
 		string selectedVideoFile;
 
-		if (_getVideoEntry(selectedVideoFile) < 0)
+		if (_fcfuncs::getVideoEntry(selectedVideoFile, VIDEO_PATH) < 0)
 		{
-			_log("Exiting to main loop.", true);
+			_fcfuncs::writeLog(_fcLogger, "Exiting to main loop.", true);
 			return -1;
 		}
 
@@ -191,7 +179,7 @@ int FishCenS::init(fcMode mode)
 		_vid.set(CAP_PROP_POS_FRAMES, 0);
 
 		//Timer's needed to ensure video is played at proper fps
-		_timers["videoFrameTimer"] = _millis();
+		_timers["videoFrameTimer"] = _fcfuncs::millis();
 
 		//Vid FPS so i can draw properly
 		_vidFPS = _vid.get(CAP_PROP_FPS);
@@ -207,10 +195,10 @@ int FishCenS::init(fcMode mode)
 		_vidNextFramePos = 0;
 		_vidFramesTotal = _vid.get(CAP_PROP_FRAME_COUNT);
 
-		_log("Selecting video \"" + selectedVideoFile + "\"", true);
-		_log("\t>> Width: " + to_string(_videoWidth) + "px", true);
-		_log("\t>> Height: " + to_string(_videoHeight) + "px", true);
-		_log("\t>> Frame rate: " + to_string(_vidFPS) + "fps", true);
+		_fcfuncs::writeLog(_fcLogger, "Selecting video \"" + selectedVideoFile + "\"", true);
+		_fcfuncs::writeLog(_fcLogger, "\t>> Width: " + to_string(_videoWidth) + "px", true);
+		_fcfuncs::writeLog(_fcLogger, "\t>> Height: " + to_string(_videoHeight) + "px", true);
+		_fcfuncs::writeLog(_fcLogger, "\t>> Frame rate: " + to_string(_vidFPS) + "fps", true);
 	}
 
 	//If calibration mode, we want the mat to be a certain width/height so we can easily fit four on there
@@ -287,41 +275,25 @@ int FishCenS::_update()
 		_setLED();
 	}
 	
-	if(_mode == fcMode::VIDEO_RECORDER)
+	if(_mode == fcMode::VIDEO_RECORDER && (_returnKey=='r' or _returnKey == 'R'))
 	{
-		if(_returnKey=='r' or _returnKey == 'R')
-		{
-			_recordOn = true;
-			_returnKey = '\0';
+		_recordOn = true;
+		_returnKey = '\0';
 
-			std::cout << "Record thread starting ... \n";
-			
-			thread recordThread(&FishCenS::_videoRunThread, this);
-			recordThread.detach();
-		}
+		std::cout << "Record thread starting ... \n";
+		
+		thread recordThread(&FishCenS::_videoRunThread, this);
+		recordThread.detach();
 	}
 
-	if (_mode == fcMode::TRACKING)
+	//Start sensor stuff
+	if (_mode == fcMode::TRACKING && (_fcfuncs::millis() - _timers["sensorsTimer"]) >= SENSORS_PERIOD)
 	{
-		//Start depth sensors thread every DEPTH_PERIOD
-//		Depth depthObj;
+		//Update sensor data
+		_timers["sensorsTimer"] = _fcfuncs::millis();
 
-		if ((_millis() - _timers["tempTimer"]) >= TEMPERATURE_PERIOD)
-		{
-			_timers["tempTimer"] = _millis();
-			//Temperature::getTemperature(_currentTemp, _baseLock);
-			thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));
-			temperatureThread.detach();		
-		}
-
-		if ((_millis() - _timers["depthTimer"]) >= DEPTH_PERIOD)
-		{
-			_timers["depthTimer"] = _millis();
-
-			std::thread depthThread(&Depth::run, ref(_depthObj), ref(_currentDepth), ref(_depthLock));
-			depthThread.detach();
-
-		}
+		std::thread sensorThread(&FishCenS::_sensorsThread, this);
+		sensorThread.detach();
 	}
 
 
@@ -336,7 +308,7 @@ int FishCenS::_update()
 		//Load video frame, if timeout, restart while loop
 		if (!_cam.getVideoFrame(_frame, 1000))
 		{
-			_log("Timeout error\n", true);
+			_fcfuncs::writeLog(_fcLogger, "Timeout error\n", true);
 			return -1;
 		}
 	}
@@ -344,11 +316,11 @@ int FishCenS::_update()
 	//Read video
 	if (_mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
-		if ((_millis() - _timers["videoFrameTimer"]) < _vidPeriod)
+		if ((_fcfuncs::millis() - _timers["videoFrameTimer"]) < _vidPeriod)
 		{
 			return -1;
 		}
-		_timers["videoFrameTimer"] = _millis();
+		_timers["videoFrameTimer"] = _fcfuncs::millis();
 
 		//Load frame to do analysis
 		{
@@ -394,9 +366,9 @@ int FishCenS::_update()
 	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO)
 	{
 		//Check to make sure we still have the correct date
-		if (_currentDate != _getDate())
+		if (_currentDate != _fcfuncs::getDate())
 		{
-			_currentDate = _getDate();
+			_currentDate = _fcfuncs::getDate();
 			_picFolderPath = PIC_BASE_PATH + _currentDate + "/";
 	
 			if (!fs::exists(_picFolderPath))
@@ -409,13 +381,13 @@ int FishCenS::_update()
 		if (_fishCount != _fishCountPrev)
 		{
 			//Get current time for recording picture
-			string picTime = _getTime();
+			string picTime = _fcfuncs::getTimeStamp();
 			string filename = _picFolderPath + picTime + ".jpg";
 		
 			//Save the frame as a picture in the current date folder
 			imwrite(filename, _frame);
 		
-			_fishCountPrev = _fishCount;
+			_fishCountPrev = _fishCount;	
 
 			string sqlDate, sqlTime;
 
@@ -437,16 +409,15 @@ int FishCenS::_update()
 	return 1;
 }
 
-
 int FishCenS::_draw()
 {
 
-	if (_millis() - _timers["drawTime"] < DRAW_PERIOD)
+	if (_fcfuncs::millis() - _timers["drawTime"] < DRAW_PERIOD)
 	{
 		return -1;
 	}
 
-	_timers["drawTime"] = _millis();
+	_timers["drawTime"] = _fcfuncs::millis();
 
 	//Get frameDraw prepared
 	if ((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
@@ -535,26 +506,9 @@ int FishCenS::_draw()
 	return 1;
 }
 
-
-
-void FishCenS::_trackingUpdate()
-{
-
-}
-
-
-void FishCenS::_calibrateUpdate()
-{
-}
-
-
-void FishCenS::_videoRecordUpdate()
-{
-}
-
 void FishCenS::_videoRun()
 {
-	double vidTimer = _millis();
+	double vidTimer = _fcfuncs::millis();
 	int frameCount = 0;
 	
 	_vidRecord.init(_frame, _videoLock, 30);
@@ -562,12 +516,12 @@ void FishCenS::_videoRun()
 	
 	while(_recordOn)
 	{		
-		if (_millis() - vidTimer >= 1000 / 30) 
+		if (_fcfuncs::millis() - vidTimer >= 1000 / 30) 
 		{	
 			if (!_vidRecord.isInRunFunc())
 			{				
-				cout << "Video record frame " << frameCount++ << " being recorded. \t Frame time: " << _millis() - vidTimer << "ms" << '\r';
-				vidTimer = _millis();				
+				cout << "Video record frame " << frameCount++ << " being recorded. \t Frame time: " << _fcfuncs::millis() - vidTimer << "ms" << '\r';
+				vidTimer = _fcfuncs::millis();				
 				_vidRecord.run(_frame, _videoLock);	
 			}
 		}
@@ -576,305 +530,6 @@ void FishCenS::_videoRun()
 	_vidRecord.close();
 	cout << "Video thread closing..." << endl;
 }
-
-int FishCenS::_getVideoEntry(string& selectionStr)
-{
-	//Prepare video path
-	string testVideoPath = TEST_VIDEO_PATH;
-	if (testVideoPath.at(testVideoPath.size() - 1) == '/')
-	{
-		testVideoPath.pop_back();
-	}
-
-	//This is the return variable
-	int videoEntered = -1;
-
-	//Get vector of all files
-	vector<string> videoFileNames;
-	for (const auto & entry : fs::directory_iterator(TEST_VIDEO_PATH))///fs::directory_iterator(TEST_VIDEO_PATH))
-	{
-		//Only add files that are .avi
-		if (entry.path().extension() == ".txt")
-		{
-			continue;
-		}
-
-		videoFileNames.push_back(entry.path());
-	}
-
-	//Need to return and exit to main if there are no files
-	if (videoFileNames.size() == 0)
-	{
-		_log("No video files in folder found in " + testVideoPath + "/", true);
-		return -1;
-	}
-
-	//Variables for iterating through part of the vidoe file folder.
-	int page = 0;
-	int pageTotal = (videoFileNames.size() / VIDEOS_PER_PAGE) + 1;
-	cout << "Page total is " << pageTotal << endl;
-
-	cout << videoFileNames.size() << " files found: \n";
-
-	//Shows
-	_showVideoList(videoFileNames, page);
-
-	while (videoEntered == -1)
-	{
-		cout << "Select video. Enter \"q\" to go back. Enter \"n\" or \"p\" for more videos.\n";
-		cout << "To select video, enter number associated with file number.\n";
-		cout << "I.e., to select \"File 4:\t \'This video.avi\'\", you would simply enter 4.\n";
-		cout << "File: ";
-
-		string userInput;
-		cin >> userInput;
-
-		//Leave the function and go back to main
-		if (userInput == "q" || userInput == "Q")
-		{
-			return -1;
-		}
-
-		//Next page, show video files, re-do while loop
-		if (userInput == "n" || userInput == "N")
-		{
-			if (++page >= pageTotal)
-			{
-				page = 0;
-			}
-			_showVideoList(videoFileNames, page);
-			continue;
-		}
-
-		//Previous page, show video files, re-do while loop
-		if (userInput == "p" || userInput == "P")
-		{
-			if (--page < 0)
-			{
-				page = pageTotal - 1;
-			}
-			_showVideoList(videoFileNames, page);
-			continue;
-		}
-
-		//Need to make sure the string can be converted to an integer
-		bool inputIsInteger = true;
-		for (int charIndex = 0; charIndex < (int) userInput.size(); charIndex++)
-		{
-			inputIsInteger = isdigit(userInput[charIndex]);
-
-			if (!inputIsInteger)
-			{
-				break;
-			}
-		}
-
-		if (!inputIsInteger)
-		{
-			_log("Input must be an integer between 0 and " + to_string(videoFileNames.size() - 1) + " (inclusive)", true);
-			continue;
-		}
-
-		int userInputInt = stoi(userInput);
-
-		if (userInputInt < 0 || userInputInt >= (int) videoFileNames.size())
-		{
-			_log("Input must be an integer between 0 and " + to_string(videoFileNames.size() - 1) + " (inclusive)", true);
-			continue;
-		}
-
-		videoEntered = userInputInt;
-	}
-
-	selectionStr = videoFileNames[videoEntered];
-	return 1;
-}
-
-
-void FishCenS::_showVideoList(vector<string> videoFileNames, int page)
-{
-	//Get indexing numbers
-	int vecBegin = page * VIDEOS_PER_PAGE;
-	int vecEnd = (page + 1) * VIDEOS_PER_PAGE;
-
-	//Make sure we don't list files exceeding array size later
-	if (vecEnd > (int) videoFileNames.size())
-	{
-		vecEnd = videoFileNames.size();
-	}
-
-	cout << "Showing files " << vecBegin << "-" << vecEnd << " of a total " << videoFileNames.size() << " files.\n";
-
-	//Iterate and list file names
-	for (int fileIndex = vecBegin; fileIndex < vecEnd; fileIndex++)
-	{
-		//This gives us the full path, which is useful later, but we just need the particular file name
-		//Therefore, following code delimits with the slashbars
-		stringstream buffSS(videoFileNames[fileIndex]);
-		string currentFile;
-
-		while (getline(buffSS, currentFile, '/'))
-		{
-		}
-
-		cout << "\t>> File " << fileIndex << ":\t \"" << currentFile << "\"\n";
-	}
-}
-
-
-
-string FishCenS::_getTime()
-{
-	//Create unique timestamp for folder
-	stringstream timestamp;
-
-	//First, create struct which contains time values
-	time_t now = time(0);
-	tm *ltm = localtime(&now);
-
-	//Store stringstream with numbers
-	timestamp << 1900 + ltm->tm_year << "_";
-
-	//Zero-pad month
-	if ((1 + ltm->tm_mon) < 10)
-	{
-		timestamp << "0";
-	}
-
-	timestamp << 1 + ltm->tm_mon << "_";
-
-	//Zero-pad day
-	if ((1 + ltm->tm_mday) < 10)
-	{
-		timestamp << "0";
-	}
-
-	timestamp << ltm->tm_mday << "_";
-
-	//Zero-pad hours
-	if (ltm->tm_hour < 10)
-	{
-		timestamp << "0";
-	}
-
-	timestamp << ltm->tm_hour << "h";
-
-	//Zero-pad minutes
-	if (ltm->tm_min < 10)
-	{
-		timestamp << "0";
-	}
-
-	timestamp << ltm->tm_min << "m";
-
-	//Zero-pad seconds
-	if (ltm->tm_sec < 10)
-	{
-		timestamp << "0";
-	}
-
-	timestamp << ltm->tm_sec << "s";
-
-	//Return string version of ss
-	return timestamp.str();
-}
-
-string FishCenS::_getDate()
-{
-	//Create unique timestamp for folder
-	stringstream timestamp;
-
-	//First, create struct which contains time values
-	time_t now = time(0);
-	tm *ltm = localtime(&now);
-
-	//Store stringstream with numbers
-	timestamp << 1900 + ltm->tm_year << "_";
-
-	//Zero-pad month
-	if ((1 + ltm->tm_mon) < 10)
-	{
-		timestamp << "0";
-	}
-
-	timestamp << 1 + ltm->tm_mon << "_";
-
-	//Zero-pad day
-	if ((1 + ltm->tm_mday) < 10)
-	{
-		timestamp << "0";
-	}
-
-	timestamp << ltm->tm_mday;
-
-	//Return string version of ss
-	return timestamp.str();
-}
-
-double FishCenS::_millis()
-{
-	return 1000 * getTickCount() / getTickFrequency();
-}
-
-
-void FishCenS::_log(string data, bool outputToScreen /* = false */)
-{
-	string dataStr = _getTime() + ":\t" + data + "\n";
-
-	if (_fcLogger.size() > MAX_LOG_SIZE)
-	{
-		_fcLogger.erase(_fcLogger.begin());
-	}
-
-	_fcLogger.push_back(dataStr);
-
-	if (outputToScreen == true)
-	{
-		cout << dataStr;
-	}
-}
-
-int FishCenS::_saveLogFile()
-{
-	string loggerPathStr = LOGGER_PATH;
-
-	//Add slash if folder-path does not end in slash so filename doesn't merge with the folder it's in
-	if (loggerPathStr[loggerPathStr.size() - 1] != '/')
-	{
-		loggerPathStr += '/';
-	}
-
-	fs::path loggerPath = loggerPathStr;
-
-	//Check if data folder exists in first place
-	if (!fs::exists(loggerPath))
-	{
-		string file_command = "mkdir -p " + loggerPathStr;
-
-		//Create directory for saving logger file in
-		if (system(file_command.c_str()) == -1)
-		{
-			cout << _getTime() + "WARNING: Could not save file!! Reason: Directory does not exist and cannot be created.\n";
-			return -1;
-		}
-
-		//Change permission on all so it can be read immediately by users
-		file_command = "chmod -R 777 ./" + loggerPathStr;
-		system(file_command.c_str());
-	}
-
-	//Now open the file and dump the contents of the logger file into it
-	ofstream outLogFile(loggerPathStr + _logFileName + ".txt");
-	for (auto logLine : _fcLogger)
-	{
-		outLogFile << logLine;
-	}
-	outLogFile.close();
-
-	return 1;
-}
-
-
 
 void FishCenS::_updateThreadStart(FishCenS* ptr)
 {
@@ -890,6 +545,38 @@ void FishCenS::_drawThreadStart(FishCenS* ptr)
 void FishCenS::_videoRunThread(FishCenS* ptr)
 {
 	ptr->_videoRun();
+}
+
+void FishCenS::_sensors()
+{
+	//First run the sensors
+	std::thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));	
+	std::thread depthThread(&Depth::run, ref(_depthObj), ref(_currentDepth), ref(_depthLock));
+
+	temperatureThread.join();	
+	depthThread.join();
+
+	//Now update SQL table
+	_fcDatabase::sensorEntry data;
+
+	//Get time and date
+	String sensorDate, sensorTime;
+	String sensorTimeStamp = _fcfuncs::getTimeStamp();
+	_fcfuncs::parseDateTime(sensorTimeStamp, sensorDate, sensorTime);
+
+	//Load data so we can put it into a query
+	data.date = sensorDate;
+	data.time = sensorTime;
+	data.depth = _currentDepth;
+	data.temperature = _currentTemp;
+
+	//Insert data into SQL table
+	_sqlObj.insertSensorData(data);
+}
+
+void FishCenS::_sensorsThread(FishCenS *ptr)
+{
+	ptr->_sensors();
 }
 
 void FishCenS::setTesting(bool isTesting)
@@ -946,12 +633,12 @@ void FishCenS::_setLED()
 {
 	Mat lightFrame;
 	
-	if (_millis() - _timers["ledTimer"] <= LIGHT_REFRESH) 
+	if (_fcfuncs::millis() - _timers["ledTimer"] <= LIGHT_REFRESH) 
 	{
 		return;
 	}
 	
-	_timers["ledTimer"] = _millis();
+	_timers["ledTimer"] = _fcfuncs::millis();
 		
 	//Store the class's camera object into lightFrame
 	{
@@ -959,20 +646,20 @@ void FishCenS::_setLED()
 
 		gpioHardwarePWM(LED_PIN, _ledPwmFreq, 0);
 		
-		double thisTimer = _millis();
+		double thisTimer = _fcfuncs::millis();
 
-		while(_millis() - thisTimer <= 300) 
+		while(_fcfuncs::millis() - thisTimer <= 300) 
 		{
 		}
 
 		if (!_cam.getVideoFrame(lightFrame, 1000))
 		{
-			_log("Timeout error while initializing", true);
+			_fcfuncs::writeLog(_fcLogger, "Timeout error while initializing", true);
 		}
 
-		thisTimer = _millis();
+		thisTimer = _fcfuncs::millis();
 
-		while(_millis() - thisTimer <= 200) 
+		while(_fcfuncs::millis() - thisTimer <= 200) 
 		{
 		}
 	}
@@ -998,15 +685,13 @@ void FishCenS::_setLED()
 			//Testing
 			std::cout << "Success. LED PWM Value is " << _ledPwmDC << "\n";
 		}
-		else{
-			_log("No data in frame");
+		else
+		{
+			_fcfuncs::writeLog(_fcLogger, "No data in frame");
 			std::cout << "Not success. LED PWM Value is " << _ledPwmDC << "\n";
 		}
 
 		//Set the PWM value of the gpioPin to pwmVal
 		gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
 	}
-		
-
-
 }

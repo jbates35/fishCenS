@@ -1,4 +1,5 @@
 #include "fishTracker.h"
+#include "misc/fcFuncs.h"
 
 #include <iostream>
 #include <fstream>

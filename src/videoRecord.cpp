@@ -1,6 +1,7 @@
 #include "videoRecord.h"
 
 #include <filesystem>
+#include "misc/fcFuncs.h"
 
 namespace fs = std::filesystem;
 using namespace _vr;

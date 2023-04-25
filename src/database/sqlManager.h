@@ -27,7 +27,6 @@ namespace _fcDatabase
         string time;
         string filename;
         char direction;
-        int count; //should delete this
         Rect roi;
     };
 }

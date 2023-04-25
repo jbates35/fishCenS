@@ -287,7 +287,7 @@ int FishCenS::_update()
 	}
 
 	//Start sensor stuff
-	if (_mode == fcMode::TRACKING && (_fcfuncs::millis() - _timers["sensorsTimer"]) >= SENSORS_PERIOD)
+	if ((_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO) && (_fcfuncs::millis() - _timers["sensorsTimer"]) >= SENSORS_PERIOD)
 	{
 		//Update sensor data
 		_timers["sensorsTimer"] = _fcfuncs::millis();
@@ -380,14 +380,25 @@ int FishCenS::_update()
 	
 		if (_fishCount != _fishCountPrev)
 		{
+			_fishCount = _fishCountPrev;
+
+			string picFolderPath = _picFolderPath;
+
+			//Remove the './' from the path, if it exists, so it can be concatenated later
+			if (picFolderPath[0] == '.')
+			{
+				picFolderPath.erase(0, 2);
+			}
+
+			//Get absolute path
+			string absPath = fs::absolute(picFolderPath).string();
+
 			//Get current time for recording picture
 			string picTime = _fcfuncs::getTimeStamp();
-			string filename = _picFolderPath + picTime + ".jpg";
+			string filename = absPath + picTime + ".jpg";
 		
 			//Save the frame as a picture in the current date folder
 			imwrite(filename, _frame);
-		
-			_fishCountPrev = _fishCount;	
 
 			string sqlDate, sqlTime;
 
@@ -398,9 +409,9 @@ int FishCenS::_update()
 			_fcDatabase::fishCounterData counterData;
 			counterData.date = sqlDate;
 			counterData.time = sqlTime;
-			counterData.count = _fishCount;
 			counterData.direction = 'R';
 			counterData.filename = filename;
+			counterData.roi = _fishTrackerObj.getCountedROI();
 
 			_sqlObj.insertFishCounterData(counterData);
 		}	

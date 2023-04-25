@@ -1,8 +1,11 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
+#include <string>
 
-namespace _fcfuncs {
+namespace _fcfuncs 
+{
     void parseDateTime(std::string timestamp, std::string &date, std::string &time);
     
     std::string getTimeStamp();

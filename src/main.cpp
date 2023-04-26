@@ -5,6 +5,8 @@
 
 #include "fishCenS.h"
 
+void printHelp();
+
 int main(int argc, char *argv[])
 {
 
@@ -15,7 +17,7 @@ int main(int argc, char *argv[])
     int mode = 0;
 
     int opt;
-    while ((opt = getopt(argc, argv, "dslm:")) != -1) 
+    while ((opt = getopt(argc, argv, "dslhm:")) != -1) 
 	{
         switch (opt) 
 		{
@@ -28,6 +30,9 @@ int main(int argc, char *argv[])
             case 'l':
                 ledOff = true;
                 break;
+			case 'h':
+				printHelp();
+				return 0;
             case 'm':
                 mode = std::stoi(optarg);
                 break;
@@ -116,5 +121,16 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-
-
+void printHelp()
+{
+	std::cout << "Usage: fishCenS [-d] [-s] [-l] [-m mode]" << std::endl;
+	std::cout << "\t-d\t\tDisplay on" << std::endl;
+	std::cout << "\t-s\t\tSensors off" << std::endl;
+	std::cout << "\t-l\t\tLED off" << std::endl;
+	std::cout << "\t-m mode\t\tMode" << std::endl;
+	std::cout << "\t\t\t0: Tracking" << std::endl;
+	std::cout << "\t\t\t1: Calibration" << std::endl;
+	std::cout << "\t\t\t2: Tracking with video (TESTING)" << std::endl;
+	std::cout << "\t\t\t3: Calibration with video (TESTING)" << std::endl;
+	std::cout << "\t\t\t4: Video (TESTING)" << std::endl;
+}

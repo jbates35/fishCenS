@@ -40,6 +40,8 @@ int Depth::init()
 		cout << "Uart successfully read.\n";
 	}
 
+	_sensorHeightMM = DEFAULT_SENSOR_HEIGHT;
+
 //	
 //	GetTime();
 //	filename = DateTimeStr + "_Depth.txt";
@@ -106,7 +108,7 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	//Store result from parent class, need lock so no over-writing
 	{
 		std::lock_guard<mutex> guard(lock);
-		depthResult = distance;	
+		depthResult = _sensorHeightMM - distance;	
 	}
 	
 	//cout << "Success: Depth data stored.\nDepth: " << distance << endl;

@@ -11,8 +11,6 @@ using namespace cv;
 using namespace std;
 
 
-
-
 //Minimum area to initiate tracker to
 #define DEFAULT_MIN_AREA 400
 #define DEFAULT_MAX_AREA 25000
@@ -326,6 +324,8 @@ public:
 	 ** @param isTesting true for testing, false to turn testing off
 	 ***/
 	void setTesting(bool isTesting);
+
+	Rect getCountedROI() { return _countedROI; }
 	
 private:
 	////////// PARAMETERS ///////////
@@ -353,6 +353,7 @@ private:
 	int _retrackPixels; //When occlusion occurs, what size of area around the ROI to look for an untracked object
 	int _retrackFrames; //When an object has been lost, how many frames to keep looking for the object before deleting object from vector
 	float _rectROIScale; //What percentage to delete from the roi when tracking
+	Rect _countedROI; //Keeps track of the last ROI which a fish was counted with 
 
 	//Parameters for counting
 	Size _frameSize; // Takes the size and calculates mid
@@ -370,10 +371,6 @@ private:
 	ftMode _programMode;
 	
 	/////////// FUNCTIONS /////////////
-	
-	//Get date and time in yyyy_mm_dd_hxxmxxsxx
-	string _getTime();
-	double _millis();
 	void _logger(vector<string>& logger, string data);
 	vector<Rect> _getRects();
 	

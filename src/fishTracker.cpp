@@ -1,4 +1,5 @@
 #include "fishTracker.h"
+#include "misc/fcFuncs.h"
 
 #include <iostream>
 #include <fstream>
@@ -47,7 +48,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	//cvtColor(frameRaw, frameGrayscale, COLOR_BGR2GRAY);
 
 	//Get time for measuring elapsed tracking time
-	_timer = _millis();
+	_timer = _fcfuncs::millis();
 		
 	//Update tracker, and ensure it's running
 	//THIS FOLLOWING CODE MAY BE HARD TO READ AND MIGHT NEED TO BE CLEANED UP SOMEHOW
@@ -85,12 +86,15 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 			if (posCurr > _frameMiddle && posLast <= _frameMiddle)
 			{
 				_logger(_loggerData, "Ball count ++");
-				fishCount++;					
+				fishCount++;	
+				_countedROI = _fishTracker[i].roi;
+
 			}
 			else if (posCurr <= _frameMiddle && posLast > _frameMiddle)
 			{
 				_logger(_loggerData, "Ball count --");
-				fishCount--;						
+				fishCount--;	
+				_countedROI = _fishTracker[i].roi;					
 			}	
 			
 			//Delete unnecessary position values
@@ -101,12 +105,12 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	//log info for timer if needed
 	if (_fishTracker.size() != 0)
 	{
-		_logger(_loggerData, "Time ellapsed for all tracker updates: " + to_string(_millis() - _timer) + "ms");
-		_loggerCsv.push_back(_millis() - _timer);
+		_logger(_loggerData, "Time ellapsed for all tracker updates: " + to_string(_fcfuncs::millis() - _timer) + "ms");
+		_loggerCsv.push_back(_fcfuncs::millis() - _timer);
 	}
 	
 	//Start process time for thresholding
-	_timer = _millis();
+	_timer = _fcfuncs::millis();
 	
 	//Change Color to HSV for easier thresholding
 	cvtColor(frameNoBG, frameProcessed, COLOR_BGR2HSV);
@@ -175,7 +179,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 			//Make rect that will be used for tracking
 			Rect contourRectROI = Rect(centerPoint.x - newWidth, centerPoint.y - newHeight, newWidth * 2, newHeight * 2);
 							
-			_logger(_loggerData, "Time ellapsed for thresholding to find first ball is " + to_string(_millis() - _timer) + "ms");
+			_logger(_loggerData, "Time ellapsed for thresholding to find first ball is " + to_string(_fcfuncs::millis() - _timer) + "ms");
 					
 			//See if this contour rectangle is an object that's already been detected
 			bool fishOverlappedROIs = false; // Turns true if the contour rect overlaps with one of the fishTracker rois
@@ -272,8 +276,8 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 				tempTracker.roi = contourRectROI;
 				tempTracker.posX.push_back(contourRectROI.x + contourRectROI.width/2);
 				tempTracker.lostFrameCount = 0;
-				tempTracker.startTime = _millis();
-				tempTracker.currentTime = _millis() - tempTracker.startTime;
+				tempTracker.startTime = _fcfuncs::millis();
+				tempTracker.currentTime = _fcfuncs::millis() - tempTracker.startTime;
 					
 				//Now add that to the overall fish tracker
 				_fishTracker.push_back(tempTracker);						
@@ -342,7 +346,7 @@ bool FishTracker::run(Mat& im, vector<returnMatsStruct>& returnMats, mutex& lock
 	for (int i = _fishTracker.size() - 1; i >= 0; i--) 
 	{	
 		
-		_fishTracker[i].currentTime = _millis() - _fishTracker[i].startTime;
+		_fishTracker[i].currentTime = _fcfuncs::millis() - _fishTracker[i].startTime;
 		bool trackedObjectOutdated = _fishTracker[i].currentTime > TRACKER_TIMEOUT_MILLIS;
 		
 		//if (_testing)
@@ -522,7 +526,7 @@ bool FishTracker::init(unsigned int video_width, unsigned int video_height, Scal
 	_rectROIScale = DEFAULT_RECT_SCALE;
 		
 	//Defaults for logger path and filename
-	_startTime = _getTime();
+	_startTime = _fcfuncs::getTimeStamp();
 	_loggerFilename = "data_" + _startTime;
 	_loggerFilepath = DEFAULT_FILE_PATH;
 	
@@ -732,70 +736,6 @@ void FishTracker::setFilename(string filename)
 	_loggerFilename = filename;
 }
 
-//Helper that gets the current time in ymd hms and returns a string
-std::string FishTracker::_getTime()
-{
-	//Create unique timestamp for folder
-	stringstream timestamp;
-	
-	//First, create struct which contains time values
-	time_t now = time(0);
-	tm *ltm = localtime(&now);
-	
-	//Store stringstream with numbers	
-	timestamp << 1900 + ltm->tm_year << "_";
-	
-	//Zero-pad month
-	if ((1 + ltm->tm_mon) < 10) 
-	{
-		timestamp << "0";
-	}
-	
-	timestamp << 1 + ltm->tm_mon << "_";
-	
-	//Zero-pad day
-	if ((1 + ltm->tm_mday) < 10) 
-	{
-		timestamp << "0";
-	}
-	
-	timestamp << ltm->tm_mday << "_";
-	
-	//Zero-pad hours
-	if (ltm->tm_hour < 10) 
-	{
-		timestamp << "0";
-	}
-	
-	timestamp << ltm->tm_hour << "h";
-	
-	//Zero-pad minutes
-	if (ltm->tm_min < 10) 
-	{
-		timestamp << "0";
-	}
-	
-	timestamp << ltm->tm_min << "m";
-	
-	//Zero-pad seconds
-	if (ltm->tm_sec < 10) 
-	{
-		timestamp << "0";
-	}
-	
-	timestamp << ltm->tm_sec << "s";
-	
-	//Return string version of ss
-	return timestamp.str();
-}
-
-
-//Return current time in millis like arduino
-double FishTracker::_millis()
-{
-	return 1000 * getTickCount() / getTickFrequency();
-}
-
 //Helper function for 
 void FishTracker::_logger(vector<string>& logger, string data)
 {
@@ -805,7 +745,7 @@ void FishTracker::_logger(vector<string>& logger, string data)
 		logger.erase(logger.begin());
 	}
 	
-	string logString = _getTime() + ": " + data;
+	string logString = _fcfuncs::getTimeStamp() + ": " + data;
 	//cout << logString << "\n";
 	logger.push_back(logString);
 }

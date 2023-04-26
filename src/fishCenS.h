@@ -137,11 +137,29 @@ public:
 	 ***/
 	void setTesting(bool isTesting);
 
+	/**
+	 * @brief Turns display on from command line
+	*/
+	void displayOn() { _displayOn = true; }
+
+	/**
+	 * @brief Turns sensors off from command line
+	*/
+	void sensorsOff() { _sensorsOff = true; }
+
+	/**
+	 * @brief Turns LED off from command line
+	*/
+	void ledOff() { _ledOff = true; }
+
 private:
 	////////////// PARAMTERS/OBJS //////////////
 	
 	//For testing mode
 	bool _testing;
+	bool _displayOn;
+	bool _sensorsOff;
+	void _ledOff;
 
 	//Pigpio related stuff
 	int _ledPwmFreq;

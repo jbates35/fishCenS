@@ -84,6 +84,9 @@ int FishCenS::init(fcMode mode)
 {	
 	//Testing of parameters
 	_testing = false;
+	_displayOn = false;
+	_sensorsOff = false;
+	_ledOff = false;
 	
 	//Mode of fishCenS object
 	_mode = mode;

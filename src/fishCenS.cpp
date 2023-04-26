@@ -278,6 +278,13 @@ int FishCenS::_update()
 		_setLED();
 	}
 	
+	if(_mode == fcMode::VIDEO_RECORDER && (_returnKey == 's' || _returnKey == 'S'))
+	{
+		_recordOn = false;
+		_returnKey = '\0';
+		std::cout << "Record thread ending ... \n";
+	}
+
 	if(_mode == fcMode::VIDEO_RECORDER && (_returnKey=='r' or _returnKey == 'R'))
 	{
 		_recordOn = true;
@@ -290,7 +297,7 @@ int FishCenS::_update()
 	}
 
 	//Start sensor stuff
-	if ((_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO) && (_fcfuncs::millis() - _timers["sensorsTimer"]) >= SENSORS_PERIOD)
+	if (!_sensorsOff && (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO) && (_fcfuncs::millis() - _timers["sensorsTimer"]) >= SENSORS_PERIOD)
 	{
 		//Update sensor data
 		_timers["sensorsTimer"] = _fcfuncs::millis();
@@ -433,6 +440,20 @@ int FishCenS::_draw()
 
 	_timers["drawTime"] = _fcfuncs::millis();
 
+	//If display is off, just return - But we need the named window for the video record 
+	//so that the key can be caught and the video can start to be recorded
+	//Also, if it's in calibration, we need that display anyway
+	if(!_displayOn && !(_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO))
+	{	
+		if(_mode == fcMode::VIDEO_RECORDER)
+		{
+			namedWindow("_BLANK", WINDOW_NORMAL);
+			_returnKey = waitKey(1);
+		}
+
+		return 0;
+	}
+
 	//Get frameDraw prepared
 	if ((_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO) && !_returnMats.empty())
 	{
@@ -510,12 +531,6 @@ int FishCenS::_draw()
 		imshow("Video", _frameDraw);
 	}
 	_returnKey = waitKey(1);
-
-	if(_returnKey == 's' || _returnKey == 'S')
-	{
-		_recordOn = false;
-	}
-
 
 	return 1;
 }
@@ -652,6 +667,12 @@ void FishCenS::_setLED()
 		return;
 	}
 	
+	if(_ledOff)
+	{	
+		gpioHardwarePWM(LED_PIN, _ledPwmFreq, 0);
+		return;
+	}
+
 	_timers["ledTimer"] = _fcfuncs::millis();
 		
 	//Store the class's camera object into lightFrame

@@ -8,11 +8,12 @@
 
 #include "libcamera/lccv.hpp"
 #include "fishTracker.h"
-#include "videoRecord.h"
+#include "misc/videoRecord.h"
 #include "sensor/Depth.h"
 #include "sensor/Temperature.h"
 #include "gui/gui.h"
 #include "gui/imex.h"
+#include "database/sqlManager.h"
 
 using namespace std;
 using namespace cv;
@@ -43,6 +44,7 @@ namespace _fc
 	
 	const double DEPTH_PERIOD = 2000; //2000 //ms
 	const double TEMPERATURE_PERIOD = 2000; //ms
+	const double SENSORS_PERIOD = 3000;
 	
 	const int SLEEP_TIMER	= 300; //milliseconds
 
@@ -209,6 +211,9 @@ private:
 	
 	//Trackbars and GUI stuff
   	gui _gui_object;
+
+	//Sql database
+	sqlManager _sqlObj;
 	
 	////////////// METHODS //////////////
 	
@@ -216,7 +221,6 @@ private:
 	//	returns 1 if good, -1 if error	
 	int _update();
 	static void _updateThreadStart(FishCenS* ptr);
-	
 	
 	// Shows video frame (might need to be threaded)
 	// returns 1 if good, -1 if error
@@ -226,25 +230,18 @@ private:
 	void _videoRun();
 	static void _videoRunThread(FishCenS* ptr);
 
-	void _trackingUpdate(); //takes care of normal tracking, and tracking with video (alpha mode)
-	void _calibrateUpdate();
+	// Runs every minute, and does data collection
+	void _sensors();
+	static void _sensorsThread(FishCenS* ptr);
 	
 	//Sensors and lights related
 	void _setLED();
-
-	//ALPHA MODES
-	void _videoRecordUpdate();
 	
 	//Helps list files for video playback initializer
 	int _getVideoEntry(string& selectionStr);
 	void _showVideoList(vector<string> videoFileNames, int page);
 		
 	//General helper functions
-	static string _getTime(); // Returns time (this is used in a few diff classes, maybe it should be deferred to a separate helper file?)
-	static string _getDate(); // Returns date
-	static double _millis(); //Returns ms to be used with getTickCount/getTickFreq
-	void _log(string data, bool outputToScreen = false); //Writes to log vector, outputs to screen if need be
-	int _saveLogFile(); //Ensures data folder exists and saves log file there 
 	int _showRectInfo(Mat& im); // Show rects for ROI, and shows info about them	
 
 };

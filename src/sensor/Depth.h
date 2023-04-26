@@ -15,11 +15,12 @@ namespace _depth
 	const int UART_DELAY = 500; //ms
 	const int BAUD_RATE = 9600;
 	const double UART_TIMEOUT = 1.0; //in seconds, timeout for reading uart bus
+	const int DEFAULT_SENSOR_HEIGHT = 954; //in mm, default sensor height
 }
 
 
-class Depth {
-
+class Depth 
+{
 private:
 
  	string DateTimeStr;     //Value set by GetTime method can be used by other methods
@@ -29,9 +30,9 @@ private:
 	int _uart;				//handle for UART
 	bool _timeOut;
 	double _startTimer;	
+	int _sensorHeightMM; 	//Sets the sensor height which the reading gets subtracted from 
 
 public:
-
 	/**
 	 * @brief Constructor, does nothing (call init for constructor)
 	 **/
@@ -66,5 +67,17 @@ public:
 	* @param lock mutex pointer
 	*/
 	void run(int& depthResult, mutex& lock);
+
+	/**
+	 * @brief Getter for sensor height
+	 * @return Sensor height in mm
+	 * */
+	int getSensorHeightMM() { return _sensorHeightMM; }
+
+	/**
+	 * @brief Setter for sensor height
+	 * @param height Sensor height in mm
+	*/
+	void setSensorHeightMM(int height) { _sensorHeightMM = height; }
 
 };

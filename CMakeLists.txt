@@ -13,13 +13,14 @@ cmake_policy(SET CMP0079 NEW)
 include_directories(src/gui)
 include_directories(src/sensor)
 include_directories(src/libcamera)
+include_directories(src/database)
+include_directories(src/misc)
 include_directories(src)
 
 #Add all required .cpp and .h files with main.cpp being main
 add_executable(fishCenS src/main.cpp
 src/fishCenS.cpp src/fishCenS.h
 src/fishTracker.cpp src/fishTracker.h
-src/videoRecord.cpp src/videoRecord.h
 src/gui/gui.cpp src/gui/gui.h
 src/gui/imex.cpp src/gui/imex.h
 src/gui/cvui.h
@@ -28,6 +29,9 @@ src/sensor/Temperature.cpp src/sensor/Temperature.h
 src/libcamera/lccv.cpp src/libcamera/lccv.hpp
 src/libcamera/libcamera_app.cpp src/libcamera/libcamera_app.h
 src/libcamera/libcamera_app_options.cpp src/libcamera/libcamera_app_options.h
+src/database/sqlManager.cpp src/database/sqlManager.h
+src/misc/fcFuncs.cpp src/misc/fcFuncs.h
+src/misc/videoRecord.cpp src/misc/videoRecord.h
 )
 
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
@@ -90,6 +94,8 @@ find_package_handle_standard_args(pigpio
 
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
+#Set postgresql variables
+set(PostgreSQL_TYPE_INCLUDE_DIR /usr/lib/postgresql/13/lib)
 
 # Source package generation setup.
 set(CPACK_GENERATOR "TXZ")
@@ -103,15 +109,16 @@ include(CPack)
 find_package(PkgConfig REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Threads REQUIRED)
+find_package(PostgreSQL REQUIRED)
 
 pkg_check_modules(LIBCAMERA REQUIRED libcamera)
 message(STATUS "libcamera library found:")
 message(STATUS "    version: ${LIBCAMERA_VERSION}")
 message(STATUS "    libraries: ${LIBCAMERA_LINK_LIBRARIES}")
 message(STATUS "    include path: ${LIBCAMERA_INCLUDE_DIRS}")
-include_directories(include ${LIBCAMERA_INCLUDE_DIRS} ${pigpio_INCLUDE_DIR} ${OPENCV_INCLUDE_DIRS})
+include_directories(include ${LIBCAMERA_INCLUDE_DIRS} ${pigpio_INCLUDE_DIR} ${OPENCV_INCLUDE_DIRS} ${PostgreSQL_INCLUDE_DIRS})
 
 set_target_properties(fishCenS PROPERTIES PREFIX "" IMPORT_PREFIX "")
 
 #Specify any required libraries
-target_link_libraries(fishCenS ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(fishCenS ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${PostgreSQL_LIBRARIES} pqxx)

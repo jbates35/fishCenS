@@ -1,10 +1,46 @@
 #include <iostream>
 #include <pigpio.h>
+#include <sstream>
+#include <unistd.h>
 
 #include "fishCenS.h"
 
 int main(int argc, char *argv[])
 {
+
+	//Parse through command line arguments
+    bool displayOn = false;
+    bool sensorsOff = false;
+    bool ledOff = false;
+    int mode = 0;
+
+    int opt;
+    while ((opt = getopt(argc, argv, "dslm:")) != -1) 
+	{
+        switch (opt) 
+		{
+            case 'd':
+                displayOn = true;
+                break;
+            case 's':
+                sensorsOff = true;
+                break;
+            case 'l':
+                ledOff = true;
+                break;
+            case 'm':
+                mode = std::stoi(optarg);
+                break;
+            default:
+                std::cerr << "Usage: " << argv[0] << " [-d] [-s] [-l] [-m mode]" << std::endl;
+                return 1;
+        }
+    }
+
+    std::cout << "displayOn = " << displayOn << std::endl;
+    std::cout << "sensorsOff = " << sensorsOff << std::endl;
+    std::cout << "ledOff = " << ledOff << std::endl;
+    std::cout << "mode = " << mode << std::endl;
 
 	//initiate pigpio
 	if (gpioInitialise() < 0)
@@ -35,30 +71,30 @@ int main(int argc, char *argv[])
 			FishCenS fc;
 			int initSuccess = false;
 
-			switch (menuKey)
+			switch (mode)
 			{
 			//Tracking
-			case '1':
+			case 0:
 				initSuccess = fc.init(fcMode::TRACKING);
 				break;
 				
 			//Calibration
-			case '2':
+			case 1:
 				initSuccess = fc.init(fcMode::CALIBRATION);
 				break;
 				
 			//Tracking with video test
-			case '3':								
+			case 2:								
 				initSuccess = fc.init(fcMode::TRACKING_WITH_VIDEO);
 				break;
 				
 				//Tracking with video test
-			case '4':								
+			case 3:								
 				initSuccess = fc.init(fcMode::CALIBRATION_WITH_VIDEO);
 				break;
 				
 				//Tracking with video test
-			case '5':								
+			case 4:								
 				initSuccess = fc.init(fcMode::VIDEO_RECORDER);
 				break;
 								

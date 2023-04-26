@@ -159,7 +159,7 @@ private:
 	bool _testing;
 	bool _displayOn;
 	bool _sensorsOff;
-	void _ledOff;
+	bool _ledOff;
 
 	//Pigpio related stuff
 	int _ledPwmFreq;

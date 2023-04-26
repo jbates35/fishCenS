@@ -8,7 +8,7 @@
 
 #include "libcamera/lccv.hpp"
 #include "fishTracker.h"
-#include "videoRecord.h"
+#include "misc/videoRecord.h"
 #include "sensor/Depth.h"
 #include "sensor/Temperature.h"
 #include "gui/gui.h"

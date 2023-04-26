@@ -21,7 +21,6 @@ include_directories(src)
 add_executable(fishCenS src/main.cpp
 src/fishCenS.cpp src/fishCenS.h
 src/fishTracker.cpp src/fishTracker.h
-src/videoRecord.cpp src/videoRecord.h
 src/gui/gui.cpp src/gui/gui.h
 src/gui/imex.cpp src/gui/imex.h
 src/gui/cvui.h
@@ -32,6 +31,7 @@ src/libcamera/libcamera_app.cpp src/libcamera/libcamera_app.h
 src/libcamera/libcamera_app_options.cpp src/libcamera/libcamera_app_options.h
 src/database/sqlManager.cpp src/database/sqlManager.h
 src/misc/fcFuncs.cpp src/misc/fcFuncs.h
+src/misc/videoRecord.cpp src/misc/videoRecord.h
 )
 
 if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)

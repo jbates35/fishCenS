@@ -31,6 +31,7 @@ private:
 	bool _timeOut;
 	double _startTimer;	
 	int _sensorHeightMM; 	//Sets the sensor height which the reading gets subtracted from 
+	int _programOpen;		//Variable which can shut the class down
 
 public:
 	/**
@@ -79,5 +80,10 @@ public:
 	 * @param height Sensor height in mm
 	*/
 	void setSensorHeightMM(int height) { _sensorHeightMM = height; }
+
+	/**
+	 * @brief Sets the variable which can shut the class down
+	*/
+	void setProgramOpen(bool programOpen) { _programOpen = programOpen; }
 
 };

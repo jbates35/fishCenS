@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
 		fc.run();
 	}
 
+	fc.closePeripherals();
 	gpioTerminate();
 	
 	return 0;

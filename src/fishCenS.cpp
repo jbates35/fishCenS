@@ -253,6 +253,9 @@ int FishCenS::init(fcMode mode)
 	//Initiate sensors - including serial for ultrasonic
 	_currentDepth = -1;
 	_currentTemp = -1;
+	
+	//_depthObj = std::make_unique<Depth>();
+	//_depthOpen = _depthObj->init();
 
 	//Load any saved file parameters
 
@@ -297,7 +300,7 @@ int FishCenS::_update()
 	}
 
 	//Start sensor stuff
-	if (!_sensorsOff && (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO) && (_fcfuncs::millis() - _timers["sensorsTimer"]) >= SENSORS_PERIOD)
+	if (!_sensorsOff && (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO) && ((_fcfuncs::millis() - _timers["sensorsTimer"]) >= SENSORS_PERIOD))
 	{
 		//Update sensor data
 		_timers["sensorsTimer"] = _fcfuncs::millis();
@@ -512,7 +515,6 @@ int FishCenS::_draw()
 		//Sensor strings to put on screen
 		{
 			//Lock depth lock guard
-			//lock_guard<mutex> guard(_depthLock);
 			string depthStr = "Depth: " + to_string(_currentDepth);
 			putText(_frameDraw, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 		}
@@ -578,17 +580,27 @@ void FishCenS::_videoRunThread(FishCenS* ptr)
 
 void FishCenS::_sensors()
 {
+	cout << "Thread starting..." << endl;
 	
+	scoped_lock<mutex> lockGuard(_sensorsLock);
+
 	//First run the sensors
 	std::thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));	
 	
-	Depth depthObj;
+	auto depthObj = std::make_unique<Depth>();
+	depthObj->init();
+	depthObj->getDepth(_currentDepth, _depthLock);
 
-	if(depthObj.init() >= 0)
-	{
-		std::thread depthThread(&Depth::run, ref(depthObj), ref(_currentDepth), ref(_depthLock));
-		depthThread.join();
-	}
+	// if(_depthOpen<0)
+	// {
+	// 	_depthOpen = _depthObj->init();
+	// } 
+	// else 
+	// {
+	// 	_depthObj -> getDepth(_currentDepth, _depthLock);
+ 	// 	// std::thread depthThread(&Depth::run, ref(*depthObj), ref(_currentDepth), ref(_depthLock));
+    //     // depthThread.join();
+	// }
 
 	temperatureThread.join();	
 
@@ -736,4 +748,9 @@ void FishCenS::_setLED()
 		//Set the PWM value of the gpioPin to pwmVal
 		gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
 	}
+}
+
+void FishCenS::closePeripherals()
+{
+	//_depthObj -> setProgramOpen(false);
 }

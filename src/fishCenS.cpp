@@ -578,12 +578,19 @@ void FishCenS::_videoRunThread(FishCenS* ptr)
 
 void FishCenS::_sensors()
 {
+	
 	//First run the sensors
 	std::thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));	
-	std::thread depthThread(&Depth::run, ref(_depthObj), ref(_currentDepth), ref(_depthLock));
+	
+	Depth depthObj;
+
+	if(depthObj.init() >= 0)
+	{
+		std::thread depthThread(&Depth::run, ref(depthObj), ref(_currentDepth), ref(_depthLock));
+		depthThread.join();
+	}
 
 	temperatureThread.join();	
-	depthThread.join();
 
 	//Now update SQL table
 	_fcDatabase::sensorEntry data;

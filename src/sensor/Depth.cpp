@@ -13,7 +13,7 @@ Depth::Depth()
 
 Depth::~Depth()
 {
-	//serClose(_uart);
+	serClose(_uart);
 
 	//	GetTime();
 	//	Distdata.open(filename, ios::app);
@@ -95,11 +95,15 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 				break;                                                  //Breaks While loop
 			}
 		}
-		if (attempts > 4) 
+		if (attempts > 10) 
 		{
 			//If 4 attempts failed it breaks while loop
 			return -1;
 		}
+		
+		serClose(_uart);
+		init();
+
 		attempts++; //Increments attempts if header does not match expected value
 	}
 	
@@ -107,7 +111,7 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	
 	//Store result from parent class, need lock so no over-writing
 	{
-		std::lock_guard<mutex> guard(lock);
+		//std::lock_guard<mutex> guard(lock);
 		depthResult = _sensorHeightMM - distance;	
 	}
 	
@@ -120,8 +124,8 @@ void Depth::run(int& depthResult, mutex& lock)
 	if (init() >= 0)
 	{
 		getDepth(depthResult, lock);
-		serClose(_uart);
 	}
+	serClose(_uart);
 }
 
 

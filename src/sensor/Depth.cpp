@@ -25,8 +25,8 @@ Depth::~Depth()
 int Depth::init()
 {
 	//char SER_PORT[] = { '/', 'd', 'e', 'v', '/', 't', 't', 'y', 'A', 'M', 'A', '0' }; // UNCOMMENT If PI 3 
-	char serPort[] = "/dev/serial0";
-	
+	char serPort[] = "/dev/serial1";
+	//char serPort[] = "/dev/ttyAMA0";
 	_uart = serOpen(serPort, BAUD_RATE, 0);
 	_programOpen = true;
 
@@ -89,6 +89,7 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 		
 		//serRead(_uart, data, 4); //Reads bytes in serial data and places in data[] array
 		dataByte = serReadByte(_uart);
+		cout << "Data Byte: " << (int) dataByte << endl;
 
 		for(int i = 0; i<sizeof(data)-1; i++)
 		{

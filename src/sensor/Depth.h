@@ -32,6 +32,7 @@ private:
 	double _startTimer;	
 	int _sensorHeightMM; 	//Sets the sensor height which the reading gets subtracted from 
 	int _programOpen;		//Variable which can shut the class down
+	int handle;
 
 public:
 	/**

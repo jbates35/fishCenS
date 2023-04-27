@@ -44,7 +44,7 @@ namespace _fc
 	
 	const double DEPTH_PERIOD = 2000; //2000 //ms
 	const double TEMPERATURE_PERIOD = 2000; //ms
-	const double SENSORS_PERIOD = 1000 * 8; //60; //ms -> 1 min
+	const double SENSORS_PERIOD = 1000 * 6; //ms -> 1 min
 	
 	const int SLEEP_TIMER	= 300; //milliseconds
 

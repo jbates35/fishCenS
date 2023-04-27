@@ -254,6 +254,9 @@ int FishCenS::init(fcMode mode)
 	_currentDepth = -1;
 	_currentTemp = -1;
 	
+	// gpioSetMode(14, PI_OUTPUT);
+	// gpioSetMode(15, PI_INPUT);
+
 	//_depthObj = std::make_unique<Depth>();
 	//_depthOpen = _depthObj->init();
 

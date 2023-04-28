@@ -590,10 +590,12 @@ void FishCenS::_sensors()
 	//First run the sensors
 	std::thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));	
 	
-	auto depthObj = std::make_unique<Depth>();
-	depthObj->init();
-	depthObj->getDepth(_currentDepth, _depthLock);
+	unique_ptr<Depth> depthObj = std::make_unique<Depth>();
 
+	if(depthObj->init() >= 0)
+	{
+		depthObj->getDepth(_currentDepth, _depthLock);
+	}
 	// if(_depthOpen<0)
 	// {
 	// 	_depthOpen = _depthObj->init();

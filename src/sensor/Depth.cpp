@@ -14,6 +14,7 @@ Depth::Depth()
 Depth::~Depth()
 {
 	serClose(_uart);
+	cout << "Closing serial" << endl;
 
 	//	GetTime();
 	//	Distdata.open(filename, ios::app);
@@ -25,10 +26,11 @@ int Depth::init()
 {
 	//char SER_PORT[] = { '/', 'd', 'e', 'v', '/', 't', 't', 'y', 'A', 'M', 'A', '0' }; // UNCOMMENT If PI 3 
 	char serPort[] = "/dev/serial0";
-	
+	//char serPort[] = "/dev/ttyAMA0";
 	_uart = serOpen(serPort, BAUD_RATE, 0);
-	
-	gpioDelay(UART_DELAY); //Delay to wait for serOpen to return handle
+	_programOpen = true;
+
+	gpioDelay(UART_DELAY*2); //Delay to wait for serOpen to return handle
 	
 	if (_uart < 0)
 	{
@@ -63,18 +65,13 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	_startTimer = getTickCount() / getTickFrequency();
 	_timeOut = false;
 	
+	char dataByte;
+
 	while (true) {
-		
-		//Flush serial buffer by reading all bytes
-		while (serDataAvailable(_uart) > 0) 
-		{
-			//Read serial byte
-			serReadByte(_uart);
-		}
 		
 		while ((serDataAvailable(_uart) <= 3) && !_timeOut)  
 		{
-			_timeOut = (getTickCount() / getTickFrequency() - _startTimer) > UART_TIMEOUT;
+			_timeOut = (getTickCount() / getTickFrequency() - _startTimer) > UART_TIMEOUT*4;
 			
 			if (_timeOut)
 			{
@@ -84,7 +81,7 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 		}
 		
 		serRead(_uart, data, 4); //Reads bytes in serial data and places in data[] array
-		
+
 		if (data[0] == header) 
 		{
 			//Checks first byte matches expected header value
@@ -98,12 +95,10 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 		if (attempts > 10) 
 		{
 			//If 4 attempts failed it breaks while loop
+			cout << "UART Failed\n";
 			return -1;
 		}
-		
-		serClose(_uart);
-		init();
-
+	
 		attempts++; //Increments attempts if header does not match expected value
 	}
 	
@@ -113,6 +108,7 @@ int Depth::getDepth(int& depthResult, mutex& lock)
 	{
 		//std::lock_guard<mutex> guard(lock);
 		depthResult = _sensorHeightMM - distance;	
+		cout << "Success. UART result is: " << depthResult << endl;
 	}
 	
 	//cout << "Success: Depth data stored.\nDepth: " << distance << endl;

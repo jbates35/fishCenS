@@ -152,6 +152,11 @@ public:
 	*/
 	void ledOff() { _ledOff = true; }
 
+	/**
+	 * @brief Tells sensor objects to close
+	*/
+	void closePeripherals();
+
 private:
 	////////////// PARAMTERS/OBJS //////////////
 	
@@ -209,6 +214,7 @@ private:
 	mutex _pwmLock;
 	mutex _frameLock; 
 	mutex _frameDrawLock;
+	mutex _sensorsLock;
 	
 	//Logger stuff
 	vector<string> _fcLogger;
@@ -222,8 +228,8 @@ private:
 	map<string, double> _timers;
 	
 	//Sensors stuff
-	Depth _depthObj;
-	int _depthSerialOpen;
+	//std::unique_ptr<Depth> _depthObj;
+	int _depthOpen;
 	int _currentDepth;
 	double _currentTemp;
 	

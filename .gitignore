@@ -43,3 +43,12 @@ obj/
 .vscode/
 
 CMakeLists.txt.old
+
+py/models
+py/labels
+py/vid
+py/img
+py/models/*
+py/labels/*
+py/vid/*
+py/img/*

@@ -3,7 +3,7 @@
 
 
 #include <opencv2/opencv.hpp>
-#include "../fishTracker.h"
+#include "fishTracker.h"
 #include "imex.h"
 
 namespace _gui

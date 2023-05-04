@@ -8,6 +8,7 @@
 
 #include "libcamera/lccv.hpp"
 #include "fishTracker.h"
+#include "fishMLWrapper.h"
 #include "misc/videoRecord.h"
 #include "sensor/Depth.h"
 #include "sensor/Temperature.h"
@@ -179,10 +180,17 @@ private:
 	//This is attached to cv::WaitKey...
 	char _returnKey;	
 	
+	//Machine learning related things
+	FishMLWrapper _fishMLWrapper;
+   vector<FishMLData> _objDetectData;
+	bool _MLReady;
+
 	//Tracking params
 	FishTracker _fishTrackerObj; // Overall tracker
+	vector<TrackedObjectData> _trackedData; //Tracked objects
 	vector<Rect> _ROIRects; //Needs opencv4.5+ - rects that show ROIs of tracked objects for putting on screen
-	int _fishCount,_fishCountPrev; 
+	int _fishIncremented, _fishIncrementedPrev;
+	int _fishDecremented, _fishDecrementedPrev; 
 	double _scaleFactor; //For calibration mode only
 
 	//Imaging (Camera and mats)
@@ -190,6 +198,7 @@ private:
 	Mat _frame, _frameDraw;
 	vector<_ft::returnMatsStruct> _returnMats; //Mats that are processed from the tracking and inrange algs
 	bool _ledState;
+	Size _frameSize;
 	
 	//Video recording
 	VideoRecord _vidRecord;
@@ -215,6 +224,11 @@ private:
 	mutex _frameLock; 
 	mutex _frameDrawLock;
 	mutex _sensorsLock;
+
+	mutex _trackerLock;
+	mutex _objDetectLock;
+	
+	mutex _singletonDraw, _singletonTracker, _singletonUpdate, _singletonML;
 	
 	//Logger stuff
 	vector<string> _fcLogger;
@@ -257,6 +271,15 @@ private:
 	// Runs every minute, and does data collection
 	void _sensors();
 	static void _sensorsThread(FishCenS* ptr);
+
+	void _trackerUpdate();
+	static void _trackerUpdateThread(FishCenS* ptr);
+
+	void _MLUpdate();
+	static void _MLUpdateThread(FishCenS* ptr);
+	
+	void _loadFrame();
+	static void _loadFrameThread(FishCenS* ptr);
 	
 	//Sensors and lights related
 	void _setLED();

@@ -105,8 +105,11 @@ int FishCenS::init(fcMode mode)
 	_timers["ledTimer"] = 0;
 
 	//Tracking and fish counting
-	_fishCount = 0;
-	_fishCountPrev = 0;
+	_fishIncremented = 0;
+	_fishIncrementedPrev = 0;
+	_fishDecremented=0;
+	_fishDecrementedPrev=0;
+
 	_fishTrackerObj.init(VIDEO_WIDTH, VIDEO_HEIGHT);
 
 	//Video stuff that needs to be initialized
@@ -154,6 +157,8 @@ int FishCenS::init(fcMode mode)
 		_videoWidth = _frame.size().width * VIDEO_SCALE_FACTOR;
 		_videoHeight = _frame.size().height * VIDEO_SCALE_FACTOR;
 
+		_frameSize = Size(_videoWidth, _videoHeight);
+
 		_fcfuncs::writeLog(_fcLogger, "Camera found. Size of camera is: ", true);
 		_fcfuncs::writeLog(_fcLogger, "\t>> Width: " + to_string(_videoWidth) + "px", true);
 		_fcfuncs::writeLog(_fcLogger, "\t>> Height: " + to_string(_videoHeight) + "px", true);
@@ -191,8 +196,8 @@ int FishCenS::init(fcMode mode)
 		//Set class video width and height for tracker
 		_videoWidth = _frame.size().width * VIDEO_SCALE_FACTOR;
 		_videoHeight = _frame.size().height * VIDEO_SCALE_FACTOR;
-		
-		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
+		_frameSize = Size(_videoWidth, _videoHeight)
+		resize(_frame, _frame, _frameSize);
 		
 		//Keep track of frames during playback so it can be looped at last frame
 		_vidNextFramePos = 0;
@@ -223,11 +228,23 @@ int FishCenS::init(fcMode mode)
 		_videoHeight /= _scaleFactor;
 	}
 
-	//Initiate tracking
+	//Initiate tracking and machine learning
 	if (_mode != fcMode::VIDEO_RECORDER)
 	{
+		//Load machine learning data
+		if(_fishMLWrapper.init() < 0) 
+		{
+			_fcfuncs::writeLog(_fcLogger, "Error loading machine learning data", true);
+			return -1;
+		}
+
 		//Initialize tracker now
-		_fishTrackerObj.init(_videoWidth, _videoHeight);
+		if(_fishTrackerObj.init(_videoWidth, _videoHeight) < 0)
+		{
+			_fcfuncs::writeLog(_fcLogger, "Error initializing tracker", true);
+			return -1;
+		}
+		
 		_ROIRects.clear();
 	}
 
@@ -284,23 +301,7 @@ int FishCenS::_update()
 		_setLED();
 	}
 	
-	if(_mode == fcMode::VIDEO_RECORDER && (_returnKey == 's' || _returnKey == 'S'))
-	{
-		_recordOn = false;
-		_returnKey = '\0';
-		std::cout << "Record thread ending ... \n";
-	}
-
-	if(_mode == fcMode::VIDEO_RECORDER && (_returnKey=='r' or _returnKey == 'R'))
-	{
-		_recordOn = true;
-		_returnKey = '\0';
-
-		std::cout << "Record thread starting ... \n";
-		
-		thread recordThread(&FishCenS::_videoRunThread, this);
-		recordThread.detach();
-	}
+	_manageVideoRecord();
 
 	//Start sensor stuff
 	if (!_sensorsOff && (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO) && ((_fcfuncs::millis() - _timers["sensorsTimer"]) >= SENSORS_PERIOD))
@@ -312,6 +313,8 @@ int FishCenS::_update()
 		sensorThread.detach();
 	}
 
+	
+	/********* START GET FRAME FUNC ***********/
 
 	//	Next two if statements just load _frame with the proper content,
 	//	depending on whether the camera is being read or a test video is
@@ -361,77 +364,14 @@ int FishCenS::_update()
 		scoped_lock lock(_frameLock);
 		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
 	}
+	/********* END GET FRAME FUNC ***********/
 
-	//Start tracking thread
-	if (_mode != fcMode::VIDEO_RECORDER && !_frame.empty())
-	{
-    //Remove bg, run tracker, do image processing
-		std::thread trackingThread(&FishTracker::run, ref(_fishTrackerObj), ref(_frame), ref(_returnMats), ref(_frameLock), ref(_fishCount), ref(_ROIRects));
-		_threadVector.push_back(move(trackingThread));
-	}
 
-	//All threads need to be joined before drawing (or looping back into update)
-	for (thread & thr : _threadVector)
-	{
-		if (thr.joinable())
-		{
-			thr.join();
-		}
-	}
+	// Start tracker thread here
+	// Start machine learning thread here
+
 	
-	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO)
-	{
-		//Check to make sure we still have the correct date
-		if (_currentDate != _fcfuncs::getDate())
-		{
-			_currentDate = _fcfuncs::getDate();
-			_picFolderPath = PIC_BASE_PATH + _currentDate + "/";
 	
-			if (!fs::exists(_picFolderPath))
-			{
-				fs::create_directory(_picFolderPath);
-				fs::permissions(_picFolderPath, fs::perms::all);		
-			}	
-		}	
-	
-		if (_fishCount != _fishCountPrev)
-		{
-			_fishCount = _fishCountPrev;
-
-			string picFolderPath = _picFolderPath;
-
-			//Remove the './' from the path, if it exists, so it can be concatenated later
-			if (picFolderPath[0] == '.')
-			{
-				picFolderPath.erase(0, 2);
-			}
-
-			//Get absolute path
-			string absPath = fs::absolute(picFolderPath).string();
-
-			//Get current time for recording picture
-			string picTime = _fcfuncs::getTimeStamp();
-			string filename = absPath + picTime + ".jpg";
-		
-			//Save the frame as a picture in the current date folder
-			imwrite(filename, _frame);
-
-			string sqlDate, sqlTime;
-
-			//Get current date and time for sql database
-			_fcfuncs::parseDateTime(picTime, sqlDate, sqlTime);
-
-			//Save to sql database
-			_fcDatabase::fishCounterData counterData;
-			counterData.date = sqlDate;
-			counterData.time = sqlTime;
-			counterData.direction = 'R';
-			counterData.filename = filename;
-			counterData.roi = _fishTrackerObj.getCountedROI();
-
-			_sqlObj.insertFishCounterData(counterData);
-		}	
-	}
 
 	return 1;
 }
@@ -570,7 +510,6 @@ void FishCenS::_updateThreadStart(FishCenS* ptr)
 	ptr->_update();
 }
 
-
 void FishCenS::_drawThreadStart(FishCenS* ptr)
 {
 	ptr->_draw();
@@ -585,7 +524,7 @@ void FishCenS::_sensors()
 {
 	cout << "Thread starting..." << endl;
 	
-	scoped_lock<mutex> lockGuard(_sensorsLock);
+	unique_lock<mutex> singleLock(_sensorsLock, try_to_lock);
 
 	//First run the sensors
 	std::thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));	
@@ -701,7 +640,7 @@ void FishCenS::_setLED()
 		
 	//Store the class's camera object into lightFrame
 	{
-		scoped_lock guard (_pwmLock);
+		scoped_lock guard (_frameLock);
 
 		gpioHardwarePWM(LED_PIN, _ledPwmFreq, 0);
 		
@@ -755,7 +694,214 @@ void FishCenS::_setLED()
 	}
 }
 
+void FishCens::_manageVideoRecord()
+{
+	if(_mode == fcMode::VIDEO_RECORDER && (_returnKey == 's' || _returnKey == 'S'))
+	{
+		_recordOn = false;
+		_returnKey = '\0';
+		std::cout << "Record thread ending ... \n";
+	}
+
+	if(_mode == fcMode::VIDEO_RECORDER && (_returnKey=='r' or _returnKey == 'R'))
+	{
+		_recordOn = true;
+		_returnKey = '\0';
+
+		std::cout << "Record thread starting ... \n";
+		
+		thread recordThread(&FishCenS::_videoRunThread, this);
+		recordThread.detach();
+	}
+}
+
 void FishCenS::closePeripherals()
 {
 	//_depthObj -> setProgramOpen(false);
+}
+
+void FishCenS::_trackerUpdate()
+{
+    std::unique_lock<std::mutex> singleLock(_singletonTracker, std::try_to_lock);
+
+    if(!singleLock.owns_lock())
+    {
+        return;
+    }
+
+    // Copy parameters to local variables to avoid problems in concurrency
+    Mat localFrame;
+    {
+        scoped_lock frameLock(_frameMutex);
+        localFrame = _frame.clone();
+    }
+
+    vector<TrackedObjectData> localTrackedData;
+    int localFishInc, localFishDec;    
+    {
+        scoped_lock trackerLock(_trackerMutex);	
+        localTrackedData = _trackedData;
+        localFishInc = _fishIncremented;
+        localFishDec = _fishDecremented;
+    }
+	
+	//Update the fish tracker
+	int trackerSuccess;
+	 trackerSuccess = _fishTracker.update(localFrame, localFishInc, localFishDec, localTrackedData);
+		return;
+
+	    //Store back into class variables
+	if(trackerSuccess >= 0)
+    {
+		
+        scoped_lock trackerLock(_trackerMutex);
+        _trackedData = localTrackedData;
+        _fishIncremented = localFishInc;
+        _fishDecremented = localFishDec;
+
+			localFishInc -= _fishIncrementedPrev;
+			localFishDec -= _fishDecrementedPrev;
+
+			_fishIncrementPrev = _fishIncremented;
+			_fishDecrementedPrev = _fishDecremented;
+    }
+
+	//Take picture and update SQL table if there are new fish
+	if(localFishInc > 0 || localFishDec > 0)
+	{
+		//Check to make sure we still have the correct date
+		if (_currentDate != _fcfuncs::getDate())
+		{
+			_currentDate = _fcfuncs::getDate();
+			_picFolderPath = PIC_BASE_PATH + _currentDate + "/";
+	
+			if (!fs::exists(_picFolderPath))
+			{
+				fs::create_directory(_picFolderPath);
+				fs::permissions(_picFolderPath, fs::perms::all);		
+			}	
+		}			
+
+		//Get the path to the folder where the pictures will be saved
+		string picFolderPath = _picFolderPath;
+
+		//Remove the './' from the path, if it exists, so it can be concatenated later
+		if (picFolderPath[0] == '.')
+		{
+			picFolderPath.erase(0, 2);
+		}
+
+		//Get absolute path
+		string absPath = fs::absolute(picFolderPath).string();
+
+		//Get current time for recording picture
+		string picTime = _fcfuncs::getTimeStamp();
+		string filename = absPath + picTime + ".jpg";
+		
+		//Save the frame as a picture in the current date folder
+		imwrite(filename, localFrame);
+
+		string sqlDate, sqlTime;
+
+		//Get current date and time for sql database
+		_fcfuncs::parseDateTime(picTime, sqlDate, sqlTime);
+
+		//Save to sql database
+		for (int i = 0; i<localFishInc; i++)
+      {
+         _fcDatabase::fishCounterData counterData;
+         counterData.date = sqlDate;
+         counterData.time = sqlTime;
+         counterData.direction = 'R';
+         counterData.filename = filename;
+         counterData.roi = _fishTrackerObj.getCountedROI();
+
+         _sqlObj.insertFishCounterData(counterData);
+      }
+
+		for (int i = 0; i<localFishDec; i++)
+		{
+         _fcDatabase::fishCounterData counterData;
+         counterData.date = sqlDate;
+         counterData.time = sqlTime;
+         counterData.direction = 'L';
+         counterData.filename = filename;
+         counterData.roi = _fishTrackerObj.getCountedROI();
+
+         _sqlObj.insertFishCounterData(counterData);			
+		}
+
+	}
+		
+
+    vector<FishMLData> localObjDetectData;
+    bool localMLReady;
+    {
+        scoped_lock objDetectLock(_objDetectLock);
+        localObjDetectData = _objDetectData;
+        localMLReady = _MLReady;
+        _MLReady=false;
+    }
+
+    // Run fish tracker
+	int mlSuccess;
+   if (localMLReady)
+		mlSuccess = _fishTracker.generate(localFrame, localObjDetectData) < 0
+				
+
+}
+
+void FishCenS::_trackerUpdateThread(FishCenS* ptr)
+{
+	ptr->_trackerUpdate();
+}
+
+void FishCenS::_MLUpdate()
+{
+    std::unique_lock<std::mutex> singleLock(_singletonML, std::try_to_lock);
+
+    if(!singleLock.owns_lock())
+    {
+        return;
+    }
+    
+    // Copy parameters to local variables to avoid problems in concurrency
+    Mat localFrame;
+    {
+        scoped_lock frameLock(_frameMutex);
+        localFrame = _frame.clone();
+    }
+    
+    vector<FishMLData> localObjDetectData;
+    {
+        scoped_lock objDetectLock(_objDetectLock);
+        localObjDetectData = _objDetectData;
+    }
+
+    // Run fishML
+    if (_fishMLWrapper.update(localFrame, localObjDetectData) < 0)
+    {
+        return;
+    }
+    
+    // Store data back into class variable
+    {
+        scoped_lock objDetectLock(_objDetectLock);
+        _objDetectData = localObjDetectData;
+        _MLReady=true;
+    }
+}
+
+void FishCenS::_MLUpdateThread(FishCenS* ptr)
+{
+	ptr->_MLUpdate();
+}
+	
+void FishCenS::_loadFrame()
+{
+}
+
+void FishCenS::_loadFrameThread(FishCenS* ptr)
+{
+	ptr->_loadFrame();
 }

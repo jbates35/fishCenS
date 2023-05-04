@@ -103,14 +103,15 @@ int FishCenS::init(fcMode mode)
 	_timers["drawTime"] = _fcfuncs::millis();
 	_timers["sensorTimer"] = _fcfuncs::millis();
 	_timers["ledTimer"] = 0;
+	_timers["trackerTimer"] = _fcfuncs::millis();
+	_timers["camTimer"] = _fcfuncs::millis();
+	_timers["videoFrameTimer"] = _fcfuncs::millis();
 
 	//Tracking and fish counting
 	_fishIncremented = 0;
 	_fishIncrementedPrev = 0;
 	_fishDecremented=0;
 	_fishDecrementedPrev=0;
-
-	_fishTrackerObj.init(VIDEO_WIDTH, VIDEO_HEIGHT);
 
 	//Video stuff that needs to be initialized
 	_videoRecordState = vrMode::VIDEO_OFF;
@@ -128,6 +129,10 @@ int FishCenS::init(fcMode mode)
 		_cam.options->list_cameras = true;
 		_cam.options->framerate = 100;
 		_cam.startVideo();
+
+		//FPS
+		_camFPS = CAM_FPS;
+		_camPeriod = 1000 / _camFPS; // in millis
 
 		//Allow camera time to figure itself out
 		_fcfuncs::writeLog(_fcLogger, "Attempting to start camera. Sleeping for " + to_string(SLEEP_TIMER) + "ms", true);
@@ -196,7 +201,7 @@ int FishCenS::init(fcMode mode)
 		//Set class video width and height for tracker
 		_videoWidth = _frame.size().width * VIDEO_SCALE_FACTOR;
 		_videoHeight = _frame.size().height * VIDEO_SCALE_FACTOR;
-		_frameSize = Size(_videoWidth, _videoHeight)
+		_frameSize = Size(_videoWidth, _videoHeight);
 		resize(_frame, _frame, _frameSize);
 		
 		//Keep track of frames during playback so it can be looped at last frame
@@ -239,7 +244,7 @@ int FishCenS::init(fcMode mode)
 		}
 
 		//Initialize tracker now
-		if(_fishTrackerObj.init(_videoWidth, _videoHeight) < 0)
+		if(_fishTrackerObj.init(_frameSize) < 0)
 		{
 			_fcfuncs::writeLog(_fcLogger, "Error initializing tracker", true);
 			return -1;
@@ -313,64 +318,28 @@ int FishCenS::_update()
 		sensorThread.detach();
 	}
 
+
+	// Get the frame
+	_loadFrame();
 	
-	/********* START GET FRAME FUNC ***********/
-
-	//	Next two if statements just load _frame with the proper content,
-	//	depending on whether the camera is being read or a test video is
-	//	instead being read.
-	//Read camera
-	if (_mode == fcMode::TRACKING || _mode == fcMode::CALIBRATION || _mode == fcMode::VIDEO_RECORDER)
-	{
-		scoped_lock lock(_frameLock, _videoLock);
-		
-		//Load video frame, if timeout, restart while loop
-		if (!_cam.getVideoFrame(_frame, 1000))
-		{
-			_fcfuncs::writeLog(_fcLogger, "Timeout error\n", true);
-			return -1;
-		}
-	}
-
-	//Read video
-	if (_mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION_WITH_VIDEO)
-	{
-		if ((_fcfuncs::millis() - _timers["videoFrameTimer"]) < _vidPeriod)
-		{
-			return -1;
-		}
-		_timers["videoFrameTimer"] = _fcfuncs::millis();
-
-		//Load frame to do analysis
-		{
-			scoped_lock lock(_frameLock);
-			_vid >> _frame;
-		}
-		
-		
-		_vidNextFramePos++;
-
-		//Loop video - Reset video to frame 0 if end of video is reached
-		if (_vidNextFramePos >= _vidFramesTotal)
-		{
-			_vidNextFramePos = 0;
-			_vid.set(CAP_PROP_POS_FRAMES, 0);
-		}
-	}
-
-	//Resize frame
-	if(_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO)
-	{
-		scoped_lock lock(_frameLock);
-		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
-	}
-	/********* END GET FRAME FUNC ***********/
-
-
 	// Start tracker thread here
-	// Start machine learning thread here
+	if ((_fcfuncs::millis()-_timers["trackerTimer"] >= TRACKING_TIMER) && (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO))
+	{
+		_timers["trackingTimer"] = _fcfuncs::millis();
 
+		// //Start tracker thread
+		// std::thread trackerThread(&FishCenS::_trackerUpdateThread, this);
+		// trackerThread.detach();
 	
+		
+		// // Start machine learning thread here
+		// std::thread mlThread(&FishCenS::_MLUpdateThread, this);
+		// mlThread.detach();
+
+		_trackerUpdate();
+		_MLUpdate();
+	
+	}
 	
 
 	return 1;
@@ -413,10 +382,11 @@ int FishCenS::_draw()
 			putText(matsStruct.mat, "Mat: " + matsStruct.title, Point(5, 15), FONT_HERSHEY_PLAIN, 0.6, Scalar(155, 230, 255), 1);	
 		}
 		
-		string fishCountStr = "Fish counted: " + to_string(_fishCount);
-		string fishTrackedStr = "Fish currently tracked: " + to_string(_ROIRects.size());
-		putText(_returnMats[0].mat, fishCountStr, FISH_COUNT_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
-		putText(_returnMats[0].mat, fishTrackedStr, FISH_TRACKED_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		string fishCountIncStr = "Fish counter -> upstream:    " + to_string(_fishIncremented);
+		string fishCountDecstr = "Fish counter -> downstream:  " + to_string(_fishDecremented);
+
+		putText(_returnMats[0].mat, fishCountIncStr, FISH_INC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+		putText(_returnMats[0].mat, fishCountDecstr, FISH_DEC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 		
 		//Change color spaces of mat to fit BGR
 		cvtColor(_returnMats[3].mat, _returnMats[3].mat, COLOR_GRAY2BGR);
@@ -433,17 +403,19 @@ int FishCenS::_draw()
 
 	if (_mode == fcMode::TRACKING || _mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::VIDEO_RECORDER)
 	{
-		scoped_lock lock(_frameDrawLock);
+		//Get a local copy of the frame for concurrency
+		Mat localFrame;
+		{
+			scoped_lock lock(_frameLock);
+			
+			if(_frame.empty())
+			{
+				return -1;
+			}
 
-		if (_returnMats.size() > 0) 
-		{
-			_returnMats[0].mat.copyTo(_frameDraw);			
+			localFrame = _frame.clone();
 		}
-		else
-		{
-			_frame.copyTo(_frameDraw);
-		}
-		
+
 		if (_mode != fcMode::VIDEO_RECORDER) 
 		{		
 			//Show info about tracked objects
@@ -588,10 +560,11 @@ int FishCenS::_showRectInfo(Mat& im)
 	}
 	
 	//Fish information
-	string fishCountStr = "Fish counted: " + to_string(_fishCount);
-	string fishTrackedStr = "Fish currently tracked: " + to_string(_ROIRects.size());
-	putText(im, fishCountStr, FISH_COUNT_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
-	putText(im, fishTrackedStr, FISH_TRACKED_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+	string fishCountIncStr = "Fish counted upstream: " + to_string(_fishIncremented);
+	string fishCountDecstr = "Fish counted downstream: " + to_string(_fishDecremented);
+
+	putText(im, fishCountIncStr, FISH_INC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+	putText(im, fishCountDecstr, FISH_DEC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 	
 	//Fish ROIs drawn + other information
 	int index = 0;
@@ -694,7 +667,7 @@ void FishCenS::_setLED()
 	}
 }
 
-void FishCens::_manageVideoRecord()
+void FishCenS::_manageVideoRecord()
 {
 	if(_mode == fcMode::VIDEO_RECORDER && (_returnKey == 's' || _returnKey == 'S'))
 	{
@@ -732,14 +705,14 @@ void FishCenS::_trackerUpdate()
     // Copy parameters to local variables to avoid problems in concurrency
     Mat localFrame;
     {
-        scoped_lock frameLock(_frameMutex);
+        scoped_lock frameLock(_frameLock);
         localFrame = _frame.clone();
     }
 
     vector<TrackedObjectData> localTrackedData;
     int localFishInc, localFishDec;    
     {
-        scoped_lock trackerLock(_trackerMutex);	
+        scoped_lock trackerLock(_trackerLock);	
         localTrackedData = _trackedData;
         localFishInc = _fishIncremented;
         localFishDec = _fishDecremented;
@@ -747,27 +720,22 @@ void FishCenS::_trackerUpdate()
 	
 	//Update the fish tracker
 	int trackerSuccess;
-	 trackerSuccess = _fishTracker.update(localFrame, localFishInc, localFishDec, localTrackedData);
+	vector<_ft::fishCountedStruct> fishCounted;
+	trackerSuccess = _fishTrackerObj.update(localFrame, localFishInc, localFishDec, localTrackedData, fishCounted);
 		return;
 
 	    //Store back into class variables
 	if(trackerSuccess >= 0)
     {
 		
-        scoped_lock trackerLock(_trackerMutex);
+        scoped_lock trackerLock(_trackerLock);
         _trackedData = localTrackedData;
         _fishIncremented = localFishInc;
         _fishDecremented = localFishDec;
-
-			localFishInc -= _fishIncrementedPrev;
-			localFishDec -= _fishDecrementedPrev;
-
-			_fishIncrementPrev = _fishIncremented;
-			_fishDecrementedPrev = _fishDecremented;
     }
 
 	//Take picture and update SQL table if there are new fish
-	if(localFishInc > 0 || localFishDec > 0)
+	if(fishCounted.size()>0)
 	{
 		//Check to make sure we still have the correct date
 		if (_currentDate != _fcfuncs::getDate())
@@ -806,27 +774,14 @@ void FishCenS::_trackerUpdate()
 		//Get current date and time for sql database
 		_fcfuncs::parseDateTime(picTime, sqlDate, sqlTime);
 
-		//Save to sql database
-		for (int i = 0; i<localFishInc; i++)
-      {
-         _fcDatabase::fishCounterData counterData;
-         counterData.date = sqlDate;
-         counterData.time = sqlTime;
-         counterData.direction = 'R';
-         counterData.filename = filename;
-         counterData.roi = _fishTrackerObj.getCountedROI();
-
-         _sqlObj.insertFishCounterData(counterData);
-      }
-
-		for (int i = 0; i<localFishDec; i++)
+		for (auto fish : fishCounted)
 		{
          _fcDatabase::fishCounterData counterData;
          counterData.date = sqlDate;
          counterData.time = sqlTime;
-         counterData.direction = 'L';
+         counterData.direction = fish.dir;
          counterData.filename = filename;
-         counterData.roi = _fishTrackerObj.getCountedROI();
+         counterData.roi = fish.roi;
 
          _sqlObj.insertFishCounterData(counterData);			
 		}
@@ -844,9 +799,8 @@ void FishCenS::_trackerUpdate()
     }
 
     // Run fish tracker
-	int mlSuccess;
-   if (localMLReady)
-		mlSuccess = _fishTracker.generate(localFrame, localObjDetectData) < 0
+	if (localMLReady)
+		_fishTrackerObj.generate(localFrame, localObjDetectData);
 				
 
 }
@@ -868,7 +822,7 @@ void FishCenS::_MLUpdate()
     // Copy parameters to local variables to avoid problems in concurrency
     Mat localFrame;
     {
-        scoped_lock frameLock(_frameMutex);
+        scoped_lock frameLock(_frameLock);
         localFrame = _frame.clone();
     }
     
@@ -899,6 +853,73 @@ void FishCenS::_MLUpdateThread(FishCenS* ptr)
 	
 void FishCenS::_loadFrame()
 {
+	//	Next two if statements just load _frame with the proper content,
+	//	depending on whether the camera is being read or a test video is
+	//	instead being read.
+
+	scoped_lock frameLock1(_pwmLock);
+	Mat localFrame;
+
+	//Read camera
+	if (_mode == fcMode::TRACKING || _mode == fcMode::CALIBRATION || _mode == fcMode::VIDEO_RECORDER)
+	{
+		if((_fcfuncs::millis() - _timers["camTimer"]) < _camPeriod)
+		{
+			return;
+		}
+		_timers["camTimer"] = _fcfuncs::millis();
+
+		scoped_lock lock(_frameLock, _videoLock);
+		
+		//Load video frame, if timeout, restart while loop
+		if (!_cam.getVideoFrame(_frame, 1000))
+		{
+			_fcfuncs::writeLog(_fcLogger, "Timeout error\n", true);
+			return;
+		}
+	}
+
+	//Read video
+	if (_mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION_WITH_VIDEO)
+	{
+		if ((_fcfuncs::millis() - _timers["videoFrameTimer"]) < _vidPeriod)
+		{
+			return;
+		}
+		_timers["videoFrameTimer"] = _fcfuncs::millis();
+
+		//Load frame and advance position of video
+		{
+			scoped_lock lock(_frameLock);
+			_vid >> _frame;
+		}
+		
+		_vidNextFramePos++;
+
+		//Loop video - Reset video to frame 0 if end of video is reached
+		if (_vidNextFramePos >= _vidFramesTotal)
+		{
+			_vidNextFramePos = 0;
+			_vid.set(CAP_PROP_POS_FRAMES, 0);
+		}
+	}
+
+	//Resize frame
+	if(_mode != fcMode::VIDEO_RECORDER)
+	{
+		scoped_lock lock(_frameLock);
+		resize(_frame, _frame, Size(_videoWidth, _videoHeight));
+	}
+
+	std::unique_lock<std::mutex> frameLock(_frameLock, std::try_to_lock);
+	if(frameLock.owns_lock())
+	{
+		_frame = localFrame;
+	}
+	else
+	{
+		_fcfuncs::writeLog(_fcLogger, "Frame skip\n", true);
+	}
 }
 
 void FishCenS::_loadFrameThread(FishCenS* ptr)

@@ -1,7 +1,7 @@
 #ifndef IMEX_H
 #define IMEX_H
 
-#include "fishTracker.h"
+#include "../tracking/fishTracker.h"
 #include <map>
 #include <chrono>
 class imex

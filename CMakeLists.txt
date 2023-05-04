@@ -108,7 +108,8 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "lccv-src")
 set(CPACK_SOURCE_IGNORE_FILES "/\.git*;/build;")
 include(CPack)
 
-include_directories(/home/dev/.local/lib/python3.10/site-packages/numpy/core/include/)
+#include_directories(/home/dev/.local/lib/python3.10/site-packages/numpy/core/include/) #For Home pi
+include_directories(/usr/lib/python3/dist-packages/numpy/core/include/) #for FishCenS pi
 
 find_package(PythonLibs REQUIRED)
 find_package(Python3 COMPONENTS Interpreter NumPy)

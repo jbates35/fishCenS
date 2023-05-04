@@ -5,10 +5,6 @@
 #include <cstdlib>
 #include <ctime>
 
-#include <opencv2/tracking/tracking_legacy.hpp>
-
-using namespace FishMLHelper;
-
 //Nothing is needed in constructor, using init() instead
 FishTracker::FishTracker()
 {
@@ -19,7 +15,7 @@ FishTracker::~FishTracker()
 	cout << "\tNOTE: FishTracker destroyed\n";
 }
 
-int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<TrackedObjectData> &trackedObjects)
+int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<TrackedObjectData> &trackedObjects, vector<_ft::fishCountedStruct> &fishCounted)
 {
 	//First, get edges for comparison at multiple times through loop
 	vector<Rect> edges;
@@ -33,6 +29,9 @@ int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<
 	vertEdges.push_back(Rect(Point((_frameSize.width * 0.5) - 10,0), Point((_frameSize.width * 0.5) + 10, _frameSize.height * TOP_AND_BOTTOM_CLIPS)));
 	vertEdges.push_back(Rect(Point((_frameSize.width * 0.5) - 10, _frameSize.height * (1 - TOP_AND_BOTTOM_CLIPS)), Point((_frameSize.width * 0.5) + 10, _frameSize.height)));
 
+	//Clear fishCounted for SQL tracker
+	_fishCounted.clear();
+	
 	//Make sure there's actually a frame to do something with
 	if (im.empty())
 	{
@@ -101,7 +100,7 @@ int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<
 	//Must go backwards else this algorithm will actually skip elements	
 	for (int i = _fishTracker.size() - 1; i >= 0; i--) 
 	{	
-		_fishTracker[i]->currentTime = millis() - _fishTracker[i]->startTime;
+		_fishTracker[i]->currentTime = _fcfuncs::millis() - _fishTracker[i]->startTime;
 
 		bool trackedObjectOutdated = _fishTracker[i]->currentTime > TRACKER_TIMEOUT_MILLIS;
 		bool centeredObjectOutdated = _fishTracker[i]->currentTime > TRACKER_TIMEOUT_MILLIS_CENTER;
@@ -168,12 +167,24 @@ int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<
 			{
 				fishIncrement++;	
 				_fishTracker[i]->isCounted=true;
+
+				_ft::fishCountedStruct tempStruct;
+				tempStruct.roi = _fishTracker[i]->roi;
+				tempStruct.dir = 'R';
+				_fishCounted.push_back(tempStruct);
+
 				continue;				
 			}
 			else if (posCurr < _frameMiddle && posLast >= _frameMiddle)
 			{
 				fishDecrement++;	
 				_fishTracker[i]->isCounted=true;
+
+				_ft::fishCountedStruct tempStruct;
+				tempStruct.roi = _fishTracker[i]->roi;
+				tempStruct.dir = 'L';
+				_fishCounted.push_back(tempStruct);
+
 				continue;
 			}
 			
@@ -196,6 +207,10 @@ int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<
 
 		trackedObjects.push_back(tempStruct);
 	}
+
+	//Copy rects from fishTracker vector to parent class
+	fishCounted.clear();
+	fishCounted = _fishCounted;
 
 	return 0;
 }
@@ -354,8 +369,8 @@ int FishTracker::generate(Mat& im, vector<FishMLData>& detectedObjects)
 			tempTracker->roi = contourRectROI;
 			tempTracker->posX.push_back(contourRectROI.x + contourRectROI.width / 2);
 			tempTracker->lostFrameCount = 0;
-			tempTracker->startTime = millis();
-			tempTracker->currentTime = millis() - tempTracker->startTime;
+			tempTracker->startTime = _fcfuncs::millis();
+			tempTracker->currentTime = _fcfuncs::millis() - tempTracker->startTime;
 			tempTracker->isCounted = false;
 			
 			scoped_lock trackerLock(_trackerLock);
@@ -377,9 +392,6 @@ int FishTracker::init(Size frameSize)
 	//Test mode for seeing important parameters
 	_testing = false;
 
-	//Area of the ROIs that overlap before it is considered a "tracked object" already
-	_minCombinedRectAreaProportion = DEFAULT_COMBINED_RECT_AREA_PROPORTION;
-	
 	//Store temporary frame to get Size and middle
 	_frameSize = frameSize;
 	_frameMiddle = _frameSize.width / 2;

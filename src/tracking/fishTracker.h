@@ -8,7 +8,7 @@
 #include <thread>
 
 #include "fishMLWrapper.h"
-#include "helperfunc.h"
+#include "../misc/fcFuncs.h"
 
 using namespace cv;
 using namespace std;
@@ -94,7 +94,7 @@ namespace _ft
 		double startTime;
 		double currentTime;
 		bool isCounted;
-		std::mutex lock;
+		//std::mutex lock;
 	};
 
 	//Sorry for confusing name
@@ -103,6 +103,20 @@ namespace _ft
 	{
 		double currentTime;
 		Rect roi;
+	};
+
+	//Struct for passing additional mats
+	struct returnMatsStruct
+	{
+		string title;
+		Mat mat;
+		imgMode colorMode;
+	};
+
+	struct fishCountedStruct
+	{
+		Rect roi;
+		char dir;
 	};
 }
 
@@ -136,7 +150,7 @@ public:
 	 * @param fishDecrement Amount of fish counted to be decrement
 	 * @param trackedObjects Vector of tracked objects from parent class
 	*/
-	int update(Mat &im, int &fishIncrement, int &fishDecrement, vector<TrackedObjectData> &trackedObjects);
+	int update(Mat &im, int &fishIncrement, int &fishDecrement, vector<TrackedObjectData> &trackedObjects, vector<_ft::fishCountedStruct> &fishCounted);
 
     /**
      * @brief Takes the identified fish and generates new tracking objects
@@ -266,6 +280,7 @@ public:
 	 ** @param isTesting true for testing, false to turn testing off
 	 ***/
 	void setTesting(bool isTesting);
+
 	
 private:
 	////////// PARAMETERS ///////////
@@ -289,7 +304,8 @@ private:
 	int _retrackPixels; //When occlusion occurs, what size of area around the ROI to look for an untracked object
 	int _retrackFrames; //When an object has been lost, how many frames to keep looking for the object before deleting object from vector
 	float _rectROIScale; //What percentage to delete from the roi when tracking
-	int _minCombinedRectAreaProportion; //Minimum area two ROIs must be before it's considered "overlapped"
+	vector<_ft::fishCountedStruct> _fishCounted;
+	//Rect _countedROI; //Keeps track of the last ROI which a fish was counted with 
 
 	//Parameters for counting
 	Size _frameSize; // Takes the size and calculates mid

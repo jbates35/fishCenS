@@ -51,7 +51,7 @@ int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<
 	{
 		//Update ROI from tracking			********** CHANGE FOLLOWING LINE FOR TRACKER IF NEED BE **************
 		{
-			scoped_lock trackerLock(_trackerLock);
+			//scoped_lock trackerLock(_trackerLock);
 			_fishTracker[i]->isTracked = _fishTracker[i]->tracker->update(im, _fishTracker[i]->roi);
 		}
 
@@ -327,7 +327,7 @@ int FishTracker::generate(Mat& im, vector<FishMLData>& detectedObjects)
 					
 				//Re-initialize the tracker with the new coordinates
 				{			
-					scoped_lock trackerLock(_trackerLock);
+					//scoped_lock trackerLock(_trackerLock);
 					fish->tracker = TrackerKCF::create(_params);
 					fish->tracker->init(im, contourRectROI);
 				}
@@ -373,7 +373,7 @@ int FishTracker::generate(Mat& im, vector<FishMLData>& detectedObjects)
 			tempTracker->currentTime = _fcfuncs::millis() - tempTracker->startTime;
 			tempTracker->isCounted = false;
 			
-			scoped_lock trackerLock(_trackerLock);
+			//scoped_lock trackerLock(_trackerLock);
 
 			//Now add that to the overall fish tracker
 			_fishTracker.push_back(std::move(tempTracker));	

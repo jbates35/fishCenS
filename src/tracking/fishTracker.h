@@ -317,8 +317,8 @@ private:
 	//Other important data
 	ftMode _programMode;
 
-	std::mutex _trackerLock;
-	std::mutex _vectorLock;
+	// std::mutex _trackerLock;
+	// std::mutex _vectorLock;
 
 	/////////// FUNCTIONS /////////////
 	vector<Rect> _getRects();

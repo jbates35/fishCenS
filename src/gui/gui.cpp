@@ -147,9 +147,9 @@ void gui::_gui(Mat& img,FishTracker &fishTrackerObj){
         // fishTrackerObj.setRange(hsv_min.value, hsv_max.value);
 
 
-        // TO do -> add Export button -> add date and time to .json as default
-        if (cvui::button(frame1, 1625, 670,100, 30, "EXPORT"))
-                imex_object.Export(fishTrackerObj, _gui::LOGGER_PATH);
+        // // TO do -> add Export button -> add date and time to .json as default
+        // if (cvui::button(frame1, 1625, 670,100, 30, "EXPORT"))
+        //         imex_object.Export(fishTrackerObj, _gui::LOGGER_PATH);
 
     cvui::endColumn();
     cvui::update(WINDOW1_NAME);

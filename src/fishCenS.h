@@ -47,7 +47,7 @@ namespace _fc
 	const double TEMPERATURE_PERIOD = 2000; //ms
 	const double SENSORS_PERIOD = 1000 * 60; //ms -> 1 min
 	
-	const double TRACKING_TIMER = 10; // Just for update loop
+	const double TRACKING_TIMER = 30; // Just for update loop
 	
 	const double CAM_FPS = 30;
 	
@@ -192,7 +192,6 @@ private:
 	//Tracking params
 	FishTracker _fishTrackerObj; // Overall tracker
 	vector<TrackedObjectData> _trackedData; //Tracked objects
-	vector<Rect> _ROIRects; //Needs opencv4.5+ - rects that show ROIs of tracked objects for putting on screen
 	int _fishIncremented, _fishIncrementedPrev;
 	int _fishDecremented, _fishDecrementedPrev; 
 	double _scaleFactor; //For calibration mode only
@@ -230,7 +229,7 @@ private:
 	mutex _frameLock; 
 	mutex _frameDrawLock;
 	mutex _sensorsLock;
-
+	mutex _sqlLock;
 	mutex _trackerLock;
 	mutex _objDetectLock;
 	
@@ -260,12 +259,6 @@ private:
 	sqlManager _sqlObj;
 	
 	////////////// METHODS //////////////
-	
-	// Sets up video frames for showing. Anything tracking is done here
-	//	returns 1 if good, -1 if error	
-	int _update();
-	static void _updateThreadStart(FishCenS* ptr);
-	
 	// Shows video frame (might need to be threaded)
 	// returns 1 if good, -1 if error
 	int _draw();	

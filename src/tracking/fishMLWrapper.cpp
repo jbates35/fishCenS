@@ -99,86 +99,103 @@ int FishMLWrapper::update(Mat &srcImg, vector<FishMLData> &objData)
       cout << "No source image for update" << endl;
       return -1;
    }
-
+   
    //Convert Mat to numpy array
    npy_intp dims[3] = { srcImg. rows, srcImg.cols, srcImg.channels() };
    _pImg = PyArray_SimpleNewFromData(srcImg.dims + 1, (npy_intp*) & dims, NPY_UINT8, srcImg.data);
 
    //Check GIL state
-   if(!PyGILState_Check())
+   _gilStateCheck = PyGILState_Check();
+   
+   if(!_gilStateCheck)
    {
       //Release GIL and save thread state
-      PyThreadState* state = PyEval_SaveThread();
+      _state = PyEval_SaveThread();
 
       //Re-acquire GIL and restore thread state
-      PyGILState_STATE gilState = PyGILState_Ensure();
+      _gilState = PyGILState_Ensure();
 
-      //Create python argument list
-      _pArgs = PyTuple_New(1);
-      PyTuple_SetItem(_pArgs, 0, _pImg);
+   }
 
-      //Create return value pointer
-      _pReturn = PyObject_CallObject(_pFunc, _pArgs);
+   //Create python argument list
+   _pArgs = PyTuple_New(1);
+   PyTuple_SetItem(_pArgs, 0, _pImg);
 
-      //Release GIL
-      PyGILState_Release(gilState);
+   //Create return value pointer
+   _pReturn = PyObject_CallObject(_pFunc, _pArgs);
 
-      //Restore thread state
-      PyEval_RestoreThread(state);
-
-      //Make sure there's a return value
-      if (_pReturn == NULL)
+   //Make sure there's a return value
+   if (_pReturn == NULL)
+   {
+      //Return GIL if need be
+      if(!_gilStateCheck)
       {
-         PyErr_Print();
-         return -1;
+         PyGILState_Release(_gilState);
+         PyEval_RestoreThread(_state);
       }
 
-      //Parse return value to vector of Rects
-      //First declare variables needed
-      vector<FishMLData> tempObjData;
+      PyErr_Print();
+      return -1;
+   }
 
-      //Get size of return value
-      Py_ssize_t rSize = PyList_Size(_pReturn);
+   //Parse return value to vector of Rects
+   //First declare variables needed
+   vector<FishMLData> tempObjData;
 
-      //Iterate through return value
-      for (Py_ssize_t i = 0; i < rSize; i++)
+   //Get size of return value
+   Py_ssize_t rSize = PyList_Size(_pReturn);
+
+   //Iterate through return value
+   for (Py_ssize_t i = 0; i < rSize; i++)
+   {
+      //This stores the iterated items which will form the rects later
+      _pROI = PyList_GetItem(_pReturn, i);
+      vector<int> rectVals;
+
+      //Parse through to get the rect coordinates
+      for (Py_ssize_t j = 0; j < 4; j++)
       {
-         //This stores the iterated items which will form the rects later
-         _pROI = PyList_GetItem(_pReturn, i);
-         vector<int> rectVals;
+         // Get object of value, convert it to a c++ style int, and store it in the vector
+         _pVal = PyList_GetItem(_pROI, j);
+         int val = PyLong_AsLong(_pVal);
+         rectVals.push_back(val);
+      }
+      //Get ID
+      _pVal = PyList_GetItem(_pROI, 4);
+      double score = PyFloat_AsDouble(_pVal);
 
-         //Parse through to get the rect coordinates
-         for (Py_ssize_t j = 0; j < 4; j++)
-         {
-            // Get object of value, convert it to a c++ style int, and store it in the vector
-            _pVal = PyList_GetItem(_pROI, j);
-            int val = PyLong_AsLong(_pVal);
-            rectVals.push_back(val);
-         }
-         //Get ID
-         _pVal = PyList_GetItem(_pROI, 4);
-         double score = PyFloat_AsDouble(_pVal);
+      //Create Rect from vector and dump for later
+      Rect ROI(rectVals[0], rectVals[1], rectVals[2], rectVals[3]);
 
-         //Create Rect from vector and dump for later
-         Rect ROI(rectVals[0], rectVals[1], rectVals[2], rectVals[3]);
+      FishMLData data = { ROI, score };
 
-         FishMLData data = { ROI, score };
+      tempObjData.push_back(data);
+   }
 
-         tempObjData.push_back(data);
+   //Clear ROIs and store new ROIs
+   objData.clear();
+
+   //If no ROIs were found, return 0
+   if(tempObjData.size() == 1 && tempObjData[0].ROI.x == -1)
+   {
+      //Return GIL if need be
+      if(!_gilStateCheck)
+      {
+         PyGILState_Release(_gilState);
+         PyEval_RestoreThread(_state);
       }
 
-      //Clear ROIs and store new ROIs
-      objData.clear();
-
-      //If no ROIs were found, return 0
-      if(tempObjData.size() == 1 && tempObjData[0].ROI.x == -1)
-      {
-         return 0;
-      }
-      
-      //Success, dump ROIs
-      objData = tempObjData;
+      return 0;
+   }
    
+   //Success, dump ROIs
+   objData = tempObjData;
+
+   //Return GIL if need be
+   if(!_gilStateCheck)
+   {
+      PyGILState_Release(_gilState);
+      PyEval_RestoreThread(_state);
    }
 
    return 1;

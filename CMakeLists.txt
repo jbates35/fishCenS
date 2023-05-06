@@ -108,6 +108,9 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "lccv-src")
 set(CPACK_SOURCE_IGNORE_FILES "/\.git*;/build;")
 include(CPack)
 
+# Add fishML to our build
+configure_file(py/fishML.py fishML.py COPYONLY)
+
 include_directories(/home/dev/.local/lib/python3.10/site-packages/numpy/core/include/) #For Home pi
 #include_directories(/usr/lib/python3/dist-packages/numpy/core/include/) #for FishCenS pi
 

@@ -11,15 +11,6 @@
 using namespace std;
 using namespace cv;
 
-//Definitions
-namespace fml
-{
-   const string _modelPath = "'models/fishModel1'";
-   const string _labelPath = "'labels/mscoco_label_map.pbtxt.txt'";
-}
-
-using namespace fml;
-
 //Data structure for rect, id, score
 struct FishMLData
 {
@@ -51,4 +42,10 @@ private:
    PyObject* _pArgs;
    PyObject* _pVal;
    PyObject* _pImg;
+
+   //For threading
+   PyThreadState* _state;
+   PyGILState_STATE _gilState;
+   bool _gilStateCheck;
+
 };

@@ -44,11 +44,11 @@ int gui::init(FishTracker& fishTrackerObj)
     cv::namedWindow(WINDOW1_NAME);
     cvui::init(WINDOW1_NAME);
     
-    // Initilize values
-    erode.value = fishTrackerObj.getErode();
-    dialate.value = fishTrackerObj.getDilate();
-    hsv_min.value = fishTrackerObj.getRange(RANGE_MIN);
-    hsv_max.value = fishTrackerObj.getRange(RANGE_MAX);
+    // // Initilize values
+    // erode.value = fishTrackerObj.getErode();
+    // dialate.value = fishTrackerObj.getDilate();
+    // hsv_min.value = fishTrackerObj.getRange(RANGE_MIN);
+    // hsv_max.value = fishTrackerObj.getRange(RANGE_MAX);
 
 
     // Erode trackbar pram
@@ -103,7 +103,7 @@ void gui::_gui(Mat& img,FishTracker &fishTrackerObj){
         cvui::trackbar(400, &erode.value.width,erode.min.width,erode.max.width);
         s = "Erode Width";
         cvui::printf(TEXT_SIZE, TEXT_COLOR,"%30s",s.c_str());
-        fishTrackerObj.setErode(erode.value);
+        // fishTrackerObj.setErode(erode.value);
 
         cvui::trackbar(400, &dialate.value.height,dialate.min.height,dialate.max.height);
         s = "Dialate Height";
@@ -112,7 +112,7 @@ void gui::_gui(Mat& img,FishTracker &fishTrackerObj){
         cvui::trackbar(400, &dialate.value.width,dialate.min.width,dialate.max.width);
         s = "Dialate Width";
         cvui::printf(TEXT_SIZE, TEXT_COLOR,"%30s",s.c_str());
-        fishTrackerObj.setDilate(dialate.value);
+        // fishTrackerObj.setDilate(dialate.value);
 
 
 
@@ -144,12 +144,12 @@ void gui::_gui(Mat& img,FishTracker &fishTrackerObj){
 
 
 
-        fishTrackerObj.setRange(hsv_min.value, hsv_max.value);
+        // fishTrackerObj.setRange(hsv_min.value, hsv_max.value);
 
 
-        // TO do -> add Export button -> add date and time to .json as default
-        if (cvui::button(frame1, 1625, 670,100, 30, "EXPORT"))
-                imex_object.Export(fishTrackerObj, _gui::LOGGER_PATH);
+        // // TO do -> add Export button -> add date and time to .json as default
+        // if (cvui::button(frame1, 1625, 670,100, 30, "EXPORT"))
+        //         imex_object.Export(fishTrackerObj, _gui::LOGGER_PATH);
 
     cvui::endColumn();
     cvui::update(WINDOW1_NAME);

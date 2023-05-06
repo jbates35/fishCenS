@@ -121,3 +121,8 @@ Gnd   -> Black
 Sig   -> White
 ```
 *Note Temperature sensor VCC can be 3.3V or 5V*
+
+### You will have to add models, labels, and possibly vids to the py folder
+
+Next part coming up soon...
+Hint: See GDrive (and the function that allows you to DL gdrive links)

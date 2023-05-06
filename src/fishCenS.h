@@ -7,7 +7,8 @@
 #include <thread>
 
 #include "libcamera/lccv.hpp"
-#include "fishTracker.h"
+#include "tracking/fishTracker.h"
+#include "tracking/fishMLWrapper.h"
 #include "misc/videoRecord.h"
 #include "sensor/Depth.h"
 #include "sensor/Temperature.h"
@@ -24,7 +25,7 @@ namespace _fc
 	//Camera width and height
 	const int VIDEO_WIDTH	= 768; //px
 	const int VIDEO_HEIGHT	= 432; //px
-	const double VIDEO_SCALE_FACTOR = 0.5;
+	const double VIDEO_SCALE_FACTOR = 1; //0.5;
 	
 	const double LIGHT_REFRESH = 1000 * 60 * 30; //ms (1000ms * 60s * 30min)
 	
@@ -46,6 +47,10 @@ namespace _fc
 	const double TEMPERATURE_PERIOD = 2000; //ms
 	const double SENSORS_PERIOD = 1000 * 60; //ms -> 1 min
 	
+	const double TRACKING_TIMER = 30; // Just for update loop
+	
+	const double CAM_FPS = 30;
+	
 	const int SLEEP_TIMER	= 300; //milliseconds
 
 	//For video listing
@@ -59,8 +64,8 @@ namespace _fc
 	const Point DEPTH_STRING_POINT = Point(50, VIDEO_HEIGHT - 40);
 	const Point TEMP_STRING_POINT = Point(50, VIDEO_HEIGHT - 20);
 	
-	const Point FISH_COUNT_POINT = Point(50, 30);
-	const Point FISH_TRACKED_POINT = Point(50, 50);
+	const Point FISH_INC_POINT = Point(50, 30);
+	const Point FISH_DEC_POINT = Point(50, 50);
 	
 	const double SENSOR_STRING_SIZE = 1;
 	const double SENSOR_STRING_THICKNESS = 2;
@@ -179,10 +184,16 @@ private:
 	//This is attached to cv::WaitKey...
 	char _returnKey;	
 	
+	//Machine learning related things
+	FishMLWrapper _fishMLWrapper;
+	vector<FishMLData> _objDetectData;
+	bool _MLReady;
+
 	//Tracking params
 	FishTracker _fishTrackerObj; // Overall tracker
-	vector<Rect> _ROIRects; //Needs opencv4.5+ - rects that show ROIs of tracked objects for putting on screen
-	int _fishCount,_fishCountPrev; 
+	vector<TrackedObjectData> _trackedData; //Tracked objects
+	int _fishIncremented, _fishIncrementedPrev;
+	int _fishDecremented, _fishDecrementedPrev; 
 	double _scaleFactor; //For calibration mode only
 
 	//Imaging (Camera and mats)
@@ -190,6 +201,9 @@ private:
 	Mat _frame, _frameDraw;
 	vector<_ft::returnMatsStruct> _returnMats; //Mats that are processed from the tracking and inrange algs
 	bool _ledState;
+	Size _frameSize;
+	double _camFPS;
+	double _camPeriod;
 	
 	//Video recording
 	VideoRecord _vidRecord;
@@ -215,6 +229,11 @@ private:
 	mutex _frameLock; 
 	mutex _frameDrawLock;
 	mutex _sensorsLock;
+	mutex _sqlLock;
+	mutex _trackerLock;
+	mutex _objDetectLock;
+	
+	mutex _singletonDraw, _singletonTracker, _singletonUpdate, _singletonML;
 	
 	//Logger stuff
 	vector<string> _fcLogger;
@@ -240,12 +259,6 @@ private:
 	sqlManager _sqlObj;
 	
 	////////////// METHODS //////////////
-	
-	// Sets up video frames for showing. Anything tracking is done here
-	//	returns 1 if good, -1 if error	
-	int _update();
-	static void _updateThreadStart(FishCenS* ptr);
-	
 	// Shows video frame (might need to be threaded)
 	// returns 1 if good, -1 if error
 	int _draw();	
@@ -257,9 +270,19 @@ private:
 	// Runs every minute, and does data collection
 	void _sensors();
 	static void _sensorsThread(FishCenS* ptr);
+
+	void _trackerUpdate();
+	static void _trackerUpdateThread(FishCenS* ptr);
+
+	void _MLUpdate();
+	static void _MLUpdateThread(FishCenS* ptr);
+	
+	void _loadFrame();
+	static void _loadFrameThread(FishCenS* ptr);
 	
 	//Sensors and lights related
 	void _setLED();
+	void _manageVideoRecord(); 
 	
 	//Helps list files for video playback initializer
 	int _getVideoEntry(string& selectionStr);

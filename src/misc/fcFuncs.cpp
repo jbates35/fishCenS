@@ -159,6 +159,7 @@ void _fcfuncs::writeLog(std::vector<std::string> &logger, std::string data, bool
 	if (outputToScreen == true)
 	{
 		cout << dataStr;
+		cout.flush();
 	}
 }
 

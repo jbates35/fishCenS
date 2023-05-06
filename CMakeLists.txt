@@ -10,6 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 cmake_policy(SET CMP0079 NEW)
 
 #include directories as required
+include_directories(src/tracking)
 include_directories(src/gui)
 include_directories(src/sensor)
 include_directories(src/libcamera)
@@ -20,7 +21,8 @@ include_directories(src)
 #Add all required .cpp and .h files with main.cpp being main
 add_executable(fishCenS src/main.cpp
 src/fishCenS.cpp src/fishCenS.h
-src/fishTracker.cpp src/fishTracker.h
+src/tracking/fishTracker.cpp src/tracking/fishTracker.h
+src/tracking/fishMLWrapper.cpp src/tracking/fishMLWrapper.h
 src/gui/gui.cpp src/gui/gui.h
 src/gui/imex.cpp src/gui/imex.h
 src/gui/cvui.h
@@ -106,6 +108,14 @@ set(CPACK_SOURCE_PACKAGE_FILE_NAME "lccv-src")
 set(CPACK_SOURCE_IGNORE_FILES "/\.git*;/build;")
 include(CPack)
 
+# Add fishML to our build
+configure_file(py/fishML.py fishML.py COPYONLY)
+
+include_directories(/home/dev/.local/lib/python3.10/site-packages/numpy/core/include/) #For Home pi
+#include_directories(/usr/lib/python3/dist-packages/numpy/core/include/) #for FishCenS pi
+
+find_package(PythonLibs REQUIRED)
+find_package(Python3 COMPONENTS Interpreter NumPy)
 find_package(PkgConfig REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Threads REQUIRED)
@@ -116,9 +126,12 @@ message(STATUS "libcamera library found:")
 message(STATUS "    version: ${LIBCAMERA_VERSION}")
 message(STATUS "    libraries: ${LIBCAMERA_LINK_LIBRARIES}")
 message(STATUS "    include path: ${LIBCAMERA_INCLUDE_DIRS}")
-include_directories(include ${LIBCAMERA_INCLUDE_DIRS} ${pigpio_INCLUDE_DIR} ${OPENCV_INCLUDE_DIRS} ${PostgreSQL_INCLUDE_DIRS})
+include_directories(include ${PYTHON_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIRS} ${LIBCAMERA_INCLUDE_DIRS} ${pigpio_INCLUDE_DIR} ${OPENCV_INCLUDE_DIRS} ${PostgreSQL_INCLUDE_DIRS})
+
+# Add these settings for performance optimization
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -march=native")
 
 set_target_properties(fishCenS PROPERTIES PREFIX "" IMPORT_PREFIX "")
 
 #Specify any required libraries
-target_link_libraries(fishCenS ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${PostgreSQL_LIBRARIES} pqxx)
+target_link_libraries(fishCenS ${PYTHON_LIBRARIES} ${NUMPY_LIBRARIES} ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${PostgreSQL_LIBRARIES} pqxx)

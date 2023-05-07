@@ -150,48 +150,53 @@ int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<
 		// Following script sees if the fish has passed through the midpoint, and from which side
 		// If it passes from left to right, we increase the ball counter. If the other way, we decrease
 		// Additionally, some code has been put in to make sure we aren't counting vector additions from multiple runs
-		_fishTracker[i]->posX.push_back(_fishTracker[i]->roi.x + _fishTracker[i]->roi.width / 2);				
+		_fishTracker[i]->posX[1] = _fishTracker[i]->roi.x + _fishTracker[i]->roi.width / 2;				
 					
-		if (_fishTracker[i]->posX.size() >= 2)
+		int posCurr = _fishTracker[i]->posX[1];
+		int posLast = _fishTracker[i]->posX[0];
+
+		// If the fish is in the middle, we don't want to count it
+		// if(_fishTracker[i]->isCounted)
+		// {
+		// 	continue;
+		// }
+
+		if (posCurr > _frameMiddle && posLast <= _frameMiddle)
 		{
-			int posCurr = _fishTracker[i]->posX[1];
-			int posLast = _fishTracker[i]->posX[0];
+			fishIncrement++;	
+			_fishTracker[i]->isCounted=true;
 
-			// If the fish is in the middle, we don't want to count it
-			if(_fishTracker[i]->isCounted)
-			{
-				continue;
-			}
+			_ft::fishCountedStruct tempStruct;
+			tempStruct.roi = _fishTracker[i]->roi;
+			tempStruct.dir = 'R';
+			_fishCounted.push_back(tempStruct);
 
-			if (posCurr > _frameMiddle && posLast <= _frameMiddle)
-			{
-				fishIncrement++;	
-				_fishTracker[i]->isCounted=true;
+			_fishTracker[i]->posX[0] = posCurr;
 
-				_ft::fishCountedStruct tempStruct;
-				tempStruct.roi = _fishTracker[i]->roi;
-				tempStruct.dir = 'R';
-				_fishCounted.push_back(tempStruct);
+			//Testing, remove later
+			cout << "Current X position of fish: " << posCurr << endl;
+			cout << "Previous x position of fish: " << posLast << endl;
 
-				continue;				
-			}
-			else if (posCurr < _frameMiddle && posLast >= _frameMiddle)
-			{
-				fishDecrement++;	
-				_fishTracker[i]->isCounted=true;
+			continue;				
+		}
+		else if (posCurr < _frameMiddle && posLast >= _frameMiddle)
+		{
+			fishDecrement++;	
+			_fishTracker[i]->isCounted=true;
 
-				_ft::fishCountedStruct tempStruct;
-				tempStruct.roi = _fishTracker[i]->roi;
-				tempStruct.dir = 'L';
-				_fishCounted.push_back(tempStruct);
+			_ft::fishCountedStruct tempStruct;
+			tempStruct.roi = _fishTracker[i]->roi;
+			tempStruct.dir = 'L';
+			_fishCounted.push_back(tempStruct);
 
-				continue;
-			}
+			_fishTracker[i]->posX[0] = posCurr;
 			
-			//Delete unnecessary position values
-			_fishTracker[i]->posX.erase(_fishTracker[i]->posX.begin());
-		}			
-	}
+			cout << "Current X position of fish: " << posCurr << endl;
+			cout << "Previous x position of fish: " << posLast << endl;
+
+			continue;
+		}
+	}		
 
 	//Copy rects from fishTracker vector to parent class
 	trackedObjects.clear();
@@ -367,7 +372,7 @@ int FishTracker::generate(Mat& im, vector<FishMLData>& detectedObjects)
 			tempTracker->tracker = TrackerKCF::create(_params);					
 			tempTracker->tracker->init(im, contourRectROI);
 			tempTracker->roi = contourRectROI;
-			tempTracker->posX.push_back(contourRectROI.x + contourRectROI.width / 2);
+			tempTracker->posX[0] = contourRectROI.x + contourRectROI.width / 2;
 			tempTracker->lostFrameCount = 0;
 			tempTracker->startTime = _fcfuncs::millis();
 			tempTracker->currentTime = _fcfuncs::millis() - tempTracker->startTime;

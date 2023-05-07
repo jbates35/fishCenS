@@ -17,7 +17,6 @@ model_file = os.path.join(script_dir, 'models/efficientdet-lite-fishcens_edgetpu
 interpreter = make_interpreter(model_file)
 interpreter.allocate_tensors()
 
-testing = False
 print("Interpreter loaded")
 
 def fishML(mat):
@@ -74,7 +73,7 @@ def fishML(mat):
         if testing:
             print ('x = ', obj.bbox.xmin, 'y = ', obj.bbox.ymin, 'w = ', obj.bbox.width, 'h = ', obj.bbox.height, 'score = ', obj.score)
             
-        if obj.score > 0.73:
+        if obj.score > 0.5:
             xmin, ymin, xmax, ymax = obj.bbox
             
             returnRects.append([
@@ -89,6 +88,8 @@ def fishML(mat):
 
 # import time
 # from picamera2 import Picamera2
+
+# testing = True
 
 # def play_video():
 #     cwd = os.getcwd()

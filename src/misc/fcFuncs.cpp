@@ -342,3 +342,19 @@ void _fcfuncs::showVideoList(std::vector<std::string> videoFileNames, int page)
 		cout << "\t>> File " << fileIndex << ":\t \"" << currentFile << "\"\n";
 	}
 }
+
+void _fcfuncs::convertRects(std::vector<cv::Rect> &rects, double scaleFactor)
+{
+	for (auto &rect : rects)
+	{
+		_fcfuncs::convertRect(rect, scaleFactor);
+	}
+}
+
+void _fcfuncs::convertRect(cv::Rect &rect, double scaleFactor)
+{
+	rect.x = rect.x * scaleFactor;
+	rect.y = rect.y * scaleFactor;
+	rect.width = rect.width * scaleFactor;
+	rect.height = rect.height * scaleFactor;
+}

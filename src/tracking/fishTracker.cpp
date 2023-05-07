@@ -420,9 +420,6 @@ int FishTracker::init(Size frameSize)
 	//When object is not on the edge, amount of frames to try to "re-track" a lost object
 	_retrackFrames = DEFAULT_RETRACK_FRAMES;
 	
-	//Proportion of ROI to scale down by to increase computational speed of tracker
-	_rectROIScale = DEFAULT_RECT_SCALE;
-		
 	//Test mode to display possible helpful debugging parameters
 	_programMode = ftMode::TRACKING;
 	

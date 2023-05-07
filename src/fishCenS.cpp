@@ -279,7 +279,7 @@ int FishCenS::init(fcMode mode)
 		}
 
 		// Initialize tracker now
-		if (_fishTrackerObj.init(_frameSize) < 0)
+		if (_fishTrackerObj.init(Size(_frameSize.width * TRACKER_SCALE_FACTOR, _frameSize.height * TRACKER_SCALE_FACTOR)) < 0)
 		{
 			_fcfuncs::writeLog(_fcLogger, "Error initializing tracker", true);
 			return -1;
@@ -569,7 +569,7 @@ int FishCenS::_showRectInfo(Mat &im)
 	}
 
 	// Draw line for seeing middle
-	int midPoint = _fishTrackerObj.getFrameCenter();
+	int midPoint = _fishTrackerObj.getFrameCenter() * 1/TRACKER_SCALE_FACTOR;
 	line(im, Point(midPoint, 0), Point(midPoint, im.size().height), Scalar(0, 255, 255), 2);
 
 	return true;
@@ -689,13 +689,13 @@ void FishCenS::_trackerUpdate()
 	{
 		scoped_lock frameLock(_frameLock);
 		localFrame = _frame.clone();
+		resize(localFrame, localFrame, Size(_frameSize.width * TRACKER_SCALE_FACTOR, _frameSize.height * TRACKER_SCALE_FACTOR));
 	}
 
 	vector<TrackedObjectData> localTrackedData;
 	int localFishInc, localFishDec;
 	{
 		scoped_lock trackerLock(_trackerLock);
-		localTrackedData = _trackedData;
 		localFishInc = _fishIncremented;
 		localFishDec = _fishDecremented;
 	}
@@ -704,6 +704,11 @@ void FishCenS::_trackerUpdate()
 	int trackerSuccess;
 	vector<_ft::fishCountedStruct> fishCounted;
 	trackerSuccess = _fishTrackerObj.update(localFrame, localFishInc, localFishDec, localTrackedData, fishCounted);
+
+	for(auto &fish : localTrackedData)
+	{
+		_fcfuncs::convertRect(fish.roi, (1/TRACKER_SCALE_FACTOR));
+	}
 
 	// Store back into class variables
 	if (trackerSuccess >= 0)
@@ -770,16 +775,19 @@ void FishCenS::_trackerUpdate()
 	}
 
 	vector<FishMLData> localObjDetectData;
-	bool localMLReady;
 	{
 		scoped_lock objDetectLock(_objDetectLock);
 		localObjDetectData = _objDetectData;
-		localMLReady = _MLReady;
-		_MLReady = false;
+		_objDetectData.clear();
+	}
+
+	for(auto &fish : localObjDetectData)
+	{
+		_fcfuncs::convertRect(fish.ROI, TRACKER_SCALE_FACTOR);
 	}
 
 	// Run fish tracker
-	if (localMLReady)
+	if (localObjDetectData.size()>0)
 		_fishTrackerObj.generate(localFrame, localObjDetectData);
 }
 
@@ -820,7 +828,6 @@ void FishCenS::_MLUpdate()
 	{
 		scoped_lock objDetectLock(_objDetectLock);
 		_objDetectData = localObjDetectData;
-		_MLReady = true;
 	}
 }
 

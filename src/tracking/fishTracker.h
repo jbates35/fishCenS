@@ -21,11 +21,8 @@ using namespace std;
 //Minimum area of combined rect before it's considered "overlapping" 
 #define DEFAULT_COMBINED_RECT_AREA 500
 
-//Default region of ROI 
-#define DEFAULT_RECT_SCALE 0.3
-
 //Proportional margin of the camera frame that will be 
-#define DEFAULT_MARGIN 0.05
+#define DEFAULT_MARGIN 0.02
 
 //When an object is lost, the amount of pixels surrounding the last ROI it will look for an untracked object
 #define DEFAULT_RETRACK_PIXELS 150

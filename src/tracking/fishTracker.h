@@ -92,7 +92,7 @@ namespace _ft
 	struct FishTrackerStruct
 	{
 		Ptr<Tracker> tracker;
-		vector<int> posX;
+		int posX[2];
 		bool isTracked;
 		Rect roi;
 		int lostFrameCount;

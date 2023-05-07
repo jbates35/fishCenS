@@ -157,11 +157,11 @@ int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<
 			int posCurr = _fishTracker[i]->posX[1];
 			int posLast = _fishTracker[i]->posX[0];
 
-			// // If the fish is in the middle, we don't want to count it
-			// if(_fishTracker[i]->isCounted)
-			// {
-			// 	continue;
-			// }
+			// If the fish is in the middle, we don't want to count it
+			if(_fishTracker[i]->isCounted)
+			{
+				continue;
+			}
 
 			if (posCurr > _frameMiddle && posLast <= _frameMiddle)
 			{

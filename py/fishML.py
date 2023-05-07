@@ -22,15 +22,33 @@ print("Interpreter loaded")
 
 def fishML(mat):
     # Crop the image taking only an roi of a square in the center
-    height, width = mat.shape[:2]
+    height, width, ztotal = mat.shape
     
-    center_x = int(width/2)
-    center_y = int(height/2)
-    roi_size = min(width, height)
+    height_larger = height > width
+    frame_diff = int(abs(height-width)/2)
+   
+    height_diff = 0
+    width_diff = 0 
     
-    x = center_x - int(roi_size/2)
-    y = center_y - int(roi_size/2)
-    mat = mat[y:y+roi_size, x:x+roi_size]
+    if height_larger and not height==width:
+        black_img = np.zeros((height, frame_diff, ztotal), np.uint8)
+        mat = np.concatenate((black_img, mat, black_img), axis=1)
+        height_diff = 0
+        width_diff = frame_diff
+        
+    elif not height_larger and not height==width:
+        black_img = np.zeros((frame_diff, width, ztotal), np.uint8)
+        mat = np.concatenate((black_img, mat, black_img), axis=0)
+        height_diff = frame_diff
+        width_diff = 0
+
+    # center_x = int(width/2)
+    # center_y = int(height/2)
+    # roi_size = min(width, height)
+    
+    # x = center_x - int(roi_size/2)
+    # y = center_y - int(roi_size/2)
+    # mat = mat[y:y+roi_size, x:x+roi_size]
 
     mat = cv.cvtColor(mat, cv.COLOR_BGR2RGB)
     
@@ -56,12 +74,12 @@ def fishML(mat):
         if testing:
             print ('x = ', obj.bbox.xmin, 'y = ', obj.bbox.ymin, 'w = ', obj.bbox.width, 'h = ', obj.bbox.height, 'score = ', obj.score)
             
-        if obj.score > 0.72:
+        if obj.score > 0.73:
             xmin, ymin, xmax, ymax = obj.bbox
             
             returnRects.append([
-                xmin + x, 
-                ymin + y, 
+                xmin - width_diff, 
+                ymin - height_diff, 
                 (xmax-xmin), 
                 (ymax-ymin),
                 obj.score
@@ -98,8 +116,8 @@ def fishML(mat):
 #         # ret, frame = cap.read()
         
 #         frame = picam.capture_array()
-#         frame = shrink_to_fit_square(frame)
-
+#         # frame = shrink_to_fit_square(frame)      
+        
 #         endTimer = time.time()
 #         if testing:
 #             print("Time to read frame: ", 1000*(endTimer - startTimer), "ms")
@@ -141,7 +159,7 @@ def fishML(mat):
 #             print("Time to display frame: ", 1000*(endTimer - startTimer), "ms")
 
 #     # Release the video capture object and close the display window
-#     cap.release()
+#     #cap.release()
 #     cv.destroyAllWindows()  
 
 # def play_picture():

@@ -162,16 +162,16 @@ int FishCenS::init(fcMode mode)
 	// initiate camera
 	if (_mode == fcMode::TRACKING || _mode == fcMode::CALIBRATION || _mode == fcMode::VIDEO_RECORDER)
 	{
-		_cam.options->video_width = VIDEO_WIDTH;
-		_cam.options->video_height = VIDEO_HEIGHT;
-		_cam.options->verbose = 1;
-		_cam.options->list_cameras = true;
-		_cam.options->framerate = 100;
-		_cam.startVideo();
-
 		// FPS
 		_camFPS = CAM_FPS;
 		_camPeriod = 1000 / _camFPS; // in millis
+
+		//_cam.options->video_width = VIDEO_WIDTH;
+		//_cam.options->video_height = VIDEO_HEIGHT;
+		_cam.options->verbose = 1;
+		_cam.options->list_cameras = true;
+		_cam.options->framerate = _camFPS;
+		_cam.startVideo();
 
 		// Allow camera time to figure itself out
 		_fcfuncs::writeLog(_fcLogger, "Attempting to start camera. Sleeping for " + to_string(SLEEP_TIMER) + "ms", true);
@@ -237,7 +237,7 @@ int FishCenS::init(fcMode mode)
 		_videoWidth = _frame.size().width * VIDEO_SCALE_FACTOR;
 		_videoHeight = _frame.size().height * VIDEO_SCALE_FACTOR;
 		_frameSize = Size(_videoWidth, _videoHeight);
-		resize(_frame, _frame, _frameSize);
+		//resize(_frame, _frame, _frameSize);
 
 		// Keep track of frames during playback so it can be looped at last frame
 		_vidNextFramePos = 0;
@@ -866,7 +866,7 @@ void FishCenS::_loadFrame()
 	// Resize frame
 	if (_mode != fcMode::VIDEO_RECORDER)
 	{
-		resize(localFrame, localFrame, Size(_videoWidth, _videoHeight));
+		//resize(localFrame, localFrame, Size(_videoWidth, _videoHeight));
 	}
 
 	std::unique_lock<std::mutex> frameLock(_frameLock, std::try_to_lock);

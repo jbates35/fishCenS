@@ -147,9 +147,9 @@ int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<
 	//Track through all fish trackers
 	for(int i = _fishTracker.size()-1; i>=0; i--)
 	{
-		//Following script sees if the fish has passed through the midpoint, and from which side
-		//If it passes from left to right, we increase the ball counter. If the other way, we decrease
-		//Additionally, some code has been put in to make sure we aren't counting vector additions from multiple runs
+		// Following script sees if the fish has passed through the midpoint, and from which side
+		// If it passes from left to right, we increase the ball counter. If the other way, we decrease
+		// Additionally, some code has been put in to make sure we aren't counting vector additions from multiple runs
 		_fishTracker[i]->posX.push_back(_fishTracker[i]->roi.x + _fishTracker[i]->roi.width / 2);				
 					
 		if (_fishTracker[i]->posX.size() >= 2)
@@ -157,7 +157,7 @@ int FishTracker::update(Mat &im, int &fishIncrement, int &fishDecrement, vector<
 			int posCurr = _fishTracker[i]->posX[1];
 			int posLast = _fishTracker[i]->posX[0];
 
-			//If the fish is in the middle, we don't want to count it
+			// If the fish is in the middle, we don't want to count it
 			if(_fishTracker[i]->isCounted)
 			{
 				continue;
@@ -249,13 +249,13 @@ int FishTracker::generate(Mat& im, vector<FishMLData>& detectedObjects)
 		//Scale machine learning rectangle based on its area for tracker efficiency
 		double rectROIScale;
 		double objArea = (double) obj.ROI.area();
-		rectROIScale = -0.0000353 * objArea + 1;
+
+		//Scale ROI based on area of object. y = a*x+b, look to .h file for values
+		rectROIScale = (MIN_ROI_SCALE-MAX_ROI_SCALE) * (objArea - MIN_FISH_AREA) / (MAX_FISH_AREA - MIN_FISH_AREA) + MAX_ROI_SCALE;
 
 		//Make sure it's not too big or too small
-		if(rectROIScale > 0.9)
-			rectROIScale = 0.9;
-		if(rectROIScale < 0.3)
-			rectROIScale = 0.3;
+		rectROIScale = (rectROIScale > MAX_ROI_SCALE) ? MAX_ROI_SCALE : rectROIScale;
+		rectROIScale = (rectROIScale < MIN_ROI_SCALE) ? MIN_ROI_SCALE : rectROIScale;
 
 		//Make scaled width
 		newWidth = (obj.ROI.width / 2) * rectROIScale;

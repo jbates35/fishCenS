@@ -22,15 +22,33 @@ print("Interpreter loaded")
 
 def fishML(mat):
     # Crop the image taking only an roi of a square in the center
-    height, width = mat.shape[:2]
+    height, width, ztotal = mat.shape
     
-    center_x = int(width/2)
-    center_y = int(height/2)
-    roi_size = min(width, height)
+    height_larger = height > width
+    frame_diff = int(abs(height-width)/2)
+   
+    height_diff = 0
+    width_diff = 0 
     
-    x = center_x - int(roi_size/2)
-    y = center_y - int(roi_size/2)
-    mat = mat[y:y+roi_size, x:x+roi_size]
+    if height_larger and not height==width:
+        black_img = np.zeros((height, frame_diff, ztotal), np.uint8)
+        mat = np.concatenate((black_img, mat, black_img), axis=1)
+        height_diff = 0
+        width_diff = frame_diff
+        
+    elif not height_larger and not height==width:
+        black_img = np.zeros((frame_diff, width, ztotal), np.uint8)
+        mat = np.concatenate((black_img, mat, black_img), axis=0)
+        height_diff = frame_diff
+        width_diff = 0
+
+    # center_x = int(width/2)
+    # center_y = int(height/2)
+    # roi_size = min(width, height)
+    
+    # x = center_x - int(roi_size/2)
+    # y = center_y - int(roi_size/2)
+    # mat = mat[y:y+roi_size, x:x+roi_size]
 
     mat = cv.cvtColor(mat, cv.COLOR_BGR2RGB)
     
@@ -56,12 +74,12 @@ def fishML(mat):
         if testing:
             print ('x = ', obj.bbox.xmin, 'y = ', obj.bbox.ymin, 'w = ', obj.bbox.width, 'h = ', obj.bbox.height, 'score = ', obj.score)
             
-        if obj.score > 0.72:
+        if obj.score > 0.65:
             xmin, ymin, xmax, ymax = obj.bbox
             
             returnRects.append([
-                xmin + x, 
-                ymin + y, 
+                xmin - width_diff, 
+                ymin - height_diff, 
                 (xmax-xmin), 
                 (ymax-ymin),
                 obj.score
@@ -69,80 +87,80 @@ def fishML(mat):
             
     return returnRects  
 
-# import time
-# from picamera2 import Picamera2
+import time
+from picamera2 import Picamera2
 
-# def play_video():
-#     cwd = os.getcwd()
-#     #cap = cv.VideoCapture(cwd + '/vid/fish_dark_trimmed_2.mov')
+def play_video():
+    cwd = os.getcwd()
+    #cap = cv.VideoCapture(cwd + '/vid/fish_dark_trimmed_2.mov')
 
-#     #Open camera
-#     picam = Picamera2()
-#     picam.configure(picam.create_preview_configuration(main={"format": 'XRGB8888', "size": (640, 480)}))
-#     picam.start()
+    #Open camera
+    picam = Picamera2()
+    picam.configure(picam.create_preview_configuration(main={"format": 'XRGB8888', "size": (640, 480)}))
+    picam.start()
             
-#     # # Create an OpenCV VideoCapture object
-#     # cap = cv.VideoCapture(picam, cv.CAP_GSTREAMER)
+    # # Create an OpenCV VideoCapture object
+    # cap = cv.VideoCapture(picam, cv.CAP_GSTREAMER)
 
-#     # # Check if the camera opened successfully
-#     # if not cap.isOpened():
-#     #     print("Failed to open the camera")
-#     #     exit()
+    # # Check if the camera opened successfully
+    # if not cap.isOpened():
+    #     print("Failed to open the camera")
+    #     exit()
 
-#     while True:
+    while True:
 
-#         #Start timer
-#         startTimer = time.time()
+        #Start timer
+        startTimer = time.time()
 
-#         # # Read frame from camera
-#         # ret, frame = cap.read()
+        # # Read frame from camera
+        # ret, frame = cap.read()
         
-#         frame = picam.capture_array()
-#         frame = shrink_to_fit_square(frame)
+        frame = picam.capture_array()
+        # frame = shrink_to_fit_square(frame)      
+        
+        endTimer = time.time()
+        if testing:
+            print("Time to read frame: ", 1000*(endTimer - startTimer), "ms")
 
-#         endTimer = time.time()
-#         if testing:
-#             print("Time to read frame: ", 1000*(endTimer - startTimer), "ms")
-
-#         # if not ret:
-#         #     print("Failed to read frame from the camera")
-#         #     break    
+        # if not ret:
+        #     print("Failed to read frame from the camera")
+        #     break    
             
-#         startTimer = time.time()
+        startTimer = time.time()
         
-#         # Run the object detection on the frame
-#         objects_found = fishML(frame)
+        # Run the object detection on the frame
+        objects_found = fishML(frame)
         
-#         endTimer = time.time()
+        endTimer = time.time()
         
-#         if testing:
-#             print("Time to detect objects: ", 1000*(endTimer - startTimer), "ms")
+        if testing:
+            print("Time to detect objects: ", 1000*(endTimer - startTimer), "ms")
         
-#         # Display the detection results on the frame
-#         startTimer = time.time()
+        # Display the detection results on the frame
+        startTimer = time.time()
 
-#         for x, y, w, h, score in objects_found:
-#             if(x == -1):
-#                 break
+        for x, y, w, h, score in objects_found:
+            if(x == -1):
+                break
 
-#             # Draw a bounding box around the detected object
-#             cv.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-#             cv.putText(frame, f'{"Fish"}:{score:.2f}', (x, y-5), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            # Draw a bounding box around the detected object
+            cv.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+            cv.putText(frame, f'{"Fish"}:{score:.2f}', (x, y-5), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-#         # Display the frame
-#         cv.imshow('Object Detection', frame)
+        # Display the frame
+        cv.imshow('Object Detection', frame)
         
-#         # Exit the loop if the 'q' key is pressed
-#         if cv.waitKey(1) == ord('q'):
-#             break
+        # Exit the loop if the 'q' key is pressed
+        if cv.waitKey(1) == ord('q'):
+            break
         
-#         endTimer = time.time()
-#         if testing:
-#             print("Time to display frame: ", 1000*(endTimer - startTimer), "ms")
+        endTimer = time.time()
+        if testing:
+            print("Time to display frame: ", 1000*(endTimer - startTimer), "ms")
 
-#     # Release the video capture object and close the display window
-#     cap.release()
-#     cv.destroyAllWindows()  
+    # Release the video capture object and close the display window
+    #cap.release()
+    cv.destroyAllWindows()  
 
 # def play_picture():
 #     # Define the key variable assigned to waitKey
@@ -177,6 +195,6 @@ def fishML(mat):
 #     cv.destroyAllWindows()
     
     
-# #If we are in main program
-# if __name__ == "__main__":
-#     play_video()
+#If we are in main program
+if __name__ == "__main__":
+    play_video()

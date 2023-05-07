@@ -188,7 +188,6 @@ int FishMLWrapper::update(Mat &srcImg, vector<FishMLData> &objData)
       return 0;
    }
    
-   //Success, dump ROIs
    objData = tempObjData;
 
    //Return GIL if need be

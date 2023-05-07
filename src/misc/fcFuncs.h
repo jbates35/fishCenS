@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <opencv2/opencv.hpp>
 
 namespace _fcfuncs 
 {
@@ -18,6 +19,9 @@ namespace _fcfuncs
 
     int getVideoEntry(std::string &selectionStr, std::string videoPath = "./testVideos/");
     void showVideoList(std::vector<std::string> videoFileNames, int page);
+
+    void convertRects(std::vector<cv::Rect> &rects, double scaleFactor = 1);
+    void convertRect(cv::Rect &rect, double scaleFactor = 1);
 
     //Definitions
     const int VIDEOS_PER_PAGE = 10;

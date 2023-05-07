@@ -74,7 +74,7 @@ def fishML(mat):
         if testing:
             print ('x = ', obj.bbox.xmin, 'y = ', obj.bbox.ymin, 'w = ', obj.bbox.width, 'h = ', obj.bbox.height, 'score = ', obj.score)
             
-        if obj.score > 0.73:
+        if obj.score > 0.63:
             xmin, ymin, xmax, ymax = obj.bbox
             
             returnRects.append([

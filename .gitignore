@@ -1,0 +1,6 @@
+cmake-build-debug/
+
+# Video Files
+*.avi
+*.mp4
+*.mov

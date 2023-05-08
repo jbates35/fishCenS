@@ -137,24 +137,6 @@ void dehaze:: dehaze_img (Mat &src, Mat &dst, double factor_step ,float initial_
     // Get the negative of the image
     bitwise_not(_corrected_img,_negative_img);
 
-    // Compute the minimum value across all channels
-    Mat bgr[3];
-    split(_corrected_img,bgr);
-
-    Mat min_ma = min(bgr[0],min(bgr[1],bgr[2]));
-    Mat negmin_ma;
-    bitwise_not(min_ma, negmin_ma);
-
-
-
-   /* double minVal, minVal_neg, maxVal, maxVal_neg ;
-    minMaxLoc(min_ma, &minVal, &maxVal, NULL, NULL);
-    minMaxLoc(negmin_ma, &minVal_neg, &maxVal_neg, NULL, NULL);
-
-    cout <<  minVal_neg << endl;
-    cout <<  minVal << endl;*/
-
-
     double luminance = compute_luminance(_corrected_img,Rect(Point(1,3),Size(3,2)),false);// Compute luminance of input frame
 
     // Make min lumanance such that its agressive if the image is bright and less agressive if the image is dark

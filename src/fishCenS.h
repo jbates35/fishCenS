@@ -9,6 +9,7 @@
 #include "libcamera/lccv.hpp"
 #include "tracking/fishTracker.h"
 #include "tracking/fishMLWrapper.h"
+#include "tracking/fishPipe.h"
 #include "misc/videoRecord.h"
 #include "sensor/Depth.h"
 #include "sensor/Temperature.h"
@@ -47,6 +48,7 @@ namespace _fc
 	const double DEPTH_PERIOD = 2000; //2000 //ms
 	const double TEMPERATURE_PERIOD = 2000; //ms
 	const double SENSORS_PERIOD = 1000 * 60; //ms -> 1 min
+	const double PIPELINE_PERIOD = 100; //ms
 	
 	const double TRACKING_TIMER = 30; // Just for update loop
 	
@@ -259,6 +261,9 @@ private:
 
 	//Sql database
 	sqlManager _sqlObj;
+
+	//Pipeline
+	FishPipeline _fishPipe;
 	
 	////////////// METHODS //////////////
 	// Shows video frame (might need to be threaded)

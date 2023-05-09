@@ -44,6 +44,8 @@ FishCenS::~FishCenS()
 	destroyAllWindows();
 	_cam.stopVideo();
 
+	_fishPipe.close();
+
 	// Turn LED off
 	gpioSetMode(LED_PIN, PI_OUTPUT);
 	gpioWrite(LED_PIN, 0);
@@ -145,6 +147,7 @@ int FishCenS::init(fcMode mode)
 	_timers["trackerTimer"] = _fcfuncs::millis();
 	_timers["camTimer"] = _fcfuncs::millis();
 	_timers["videoFrameTimer"] = _fcfuncs::millis();
+	_timers["pipeline"] = _fcfuncs::millis();
 
 	// Tracking and fish counting
 	_fishIncremented = 0;
@@ -327,6 +330,9 @@ int FishCenS::init(fcMode mode)
 	{
 		_sqlObj.init();
 	}
+
+	//Make pipeline
+	_fishPipe.init();
 
 	return 1;
 }
@@ -884,6 +890,14 @@ void FishCenS::_loadFrame()
 	else
 	{
 		_fcfuncs::writeLog(_fcLogger, "Frame skip\n", true);
+	}
+
+	// Update the pipeline
+	if((_fcfuncs::millis()-_timers["pipeline"])>=PIPELINE_PERIOD)
+	{
+		_timers["pipeline"] = _fcfuncs::millis();
+		_fishPipe.write(localFrame);
+		cout << "Pipeline time: " << _fcfuncs::millis() - _timers["pipeline"] << "ms" << endl;
 	}
 }
 

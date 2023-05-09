@@ -25,15 +25,14 @@ private:
 
 class FishPipeline
 {
-const string DEFAULT_IP_ADDRESS = "192.168.0.235";
-const string DEFAULT_MULTICAST_ADDRESS = "239.255.0.1";
-const unsigned short DEFAULT_MULTICAST_PORT = 1234;
+const string DEFAULT_IP_ADDRESS = "127.0.0.1";
+const unsigned short DEFAULT_UDP_PORT = 1595;
 
 public:
     FishPipeline();
     ~FishPipeline();
     
-    void init(string ip_address_str="", string multicast_address_str="", unsigned short multicast_port=0);
+    void init(string ip_address_str="", unsigned short udp_port=0);
     void write(cv::Mat &frame);
     void close();
 
@@ -42,9 +41,10 @@ private:
     boost::asio::ip::udp::socket _socket;
     boost::asio::ip::udp::endpoint _multicastEndpoint;
 
-    boost::asio::ip::address _multicast_address;
     boost::asio::ip::address _ip_address;
-    unsigned short _multicast_port;
+    unsigned short _udp_port;
+
+    boost::asio::ip::udp::endpoint _senderEndpoint;
     
-    void handleSend(const boost::system::error_code &error, size_t bytesSent);
+    void handleSend(const boost::system::error_code &error, size_t bytesSent, std::shared_ptr<std::vector<uint8_t>> framePtr);
 };

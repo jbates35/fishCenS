@@ -7,33 +7,30 @@ FishPipeline::FishPipeline() : _socket(_ioContext)
 FishPipeline::~FishPipeline()
 {
     if(_socket.is_open())
-        _socket.close();
+        close();
 }
 
-void FishPipeline::init(string ip_address_str, string multicast_address_str, unsigned short multicast_port)
+void FishPipeline::init(string ip_address_str, unsigned short udp_port)
 {
     if(ip_address_str == "")
         ip_address_str = DEFAULT_IP_ADDRESS;
 
-    if(multicast_address_str == "")
-        multicast_address_str = DEFAULT_MULTICAST_ADDRESS;
-
-    _multicast_port = multicast_port;
+    _udp_port = udp_port;
     
-    if(multicast_port == 0)
-        _multicast_port = DEFAULT_MULTICAST_PORT;
+    if(udp_port == 0)
+        _udp_port = DEFAULT_UDP_PORT;
 
-    //initialize socket
-    _socket = boost::asio::ip::udp::socket(_ioContext);
+    cout << "IP address: " << ip_address_str << endl;
+    cout << "UDP port: " << _udp_port << endl;
+
 
     //set socket options
     _socket.open(boost::asio::ip::udp::v4());
     _socket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
 
-    //Join multicast group
-    _multicast_address = boost::asio::ip::address::from_string(multicast_address_str);
+    //Join udp
     _ip_address = boost::asio::ip::address::from_string(ip_address_str);    
-    _socket.set_option(boost::asio::ip::multicast::join_group(_multicast_address));
+    _senderEndpoint = boost::asio::ip::udp::endpoint(_ip_address, _udp_port);
 }
 
 void FishPipeline::write(cv::Mat &frame)
@@ -49,20 +46,27 @@ void FishPipeline::write(cv::Mat &frame)
     compression_params.push_back(90);
     cv::imencode(".jpg", frame, buffer, compression_params);
 
-    boost::asio::const_buffer boostBuffer(boost::asio::buffer(buffer));
+    // Create a shared pointer to hold the frame
+    auto framePtr = std::make_shared<std::vector<uint8_t>>(std::move(buffer));
 
-    _socket.async_send_to(boostBuffer, boost::asio::ip::udp::endpoint(_multicast_address, _multicast_port),
-        [this](const boost::system::error_code& error, std::size_t bytes_transferred) {
-            handleSend(error, bytes_transferred);
+    boost::asio::const_buffer boostBuffer(boost::asio::buffer(*framePtr));
+
+    _socket.async_send_to(boostBuffer, _senderEndpoint,
+        [this, framePtr](const boost::system::error_code& error, std::size_t bytes_transferred) {
+            handleSend(error, bytes_transferred, framePtr);
         });
 }
 
 void FishPipeline::close()
 {
-    _socket.close();
+    boost::system::error_code error;
+    _socket.close(error);
+    if (error) {
+        std::cout << "Socket close operation failed: " << error.message() << std::endl;
+    }
 }
 
-void FishPipeline::handleSend(const boost::system::error_code &error, size_t bytesSent)
+void FishPipeline::handleSend(const boost::system::error_code &error, size_t bytesSent, std::shared_ptr<std::vector<uint8_t>> framePtr)
 {    
     if (error) {
         // Handle the error

@@ -36,6 +36,14 @@ FishCenS::FishCenS()
 			fs::permissions(x, fs::perms::all);
 		}
 	}
+
+	// Testing of parameters
+	_testing = false;
+	_displayOn = false;
+	_sensorsOff = false;
+	_ledOff = false;
+	_pipelineOff = false;
+
 }
 
 FishCenS::~FishCenS()
@@ -44,7 +52,8 @@ FishCenS::~FishCenS()
 	destroyAllWindows();
 	_cam.stopVideo();
 
-	_fishPipe.close();
+	if(!_pipelineOff)
+		_fishPipe.close();
 
 	// Turn LED off
 	gpioSetMode(LED_PIN, PI_OUTPUT);
@@ -123,12 +132,6 @@ int FishCenS::run()
 
 int FishCenS::init(fcMode mode)
 {
-	// Testing of parameters
-	_testing = false;
-	_displayOn = false;
-	_sensorsOff = false;
-	_ledOff = false;
-
 	// Mode of fishCenS object
 	_mode = mode;
 
@@ -332,7 +335,8 @@ int FishCenS::init(fcMode mode)
 	}
 
 	//Make pipeline
-	_fishPipe.init();
+	if(!_pipelineOff)
+		_fishPipe.init();
 
 	return 1;
 }
@@ -893,7 +897,7 @@ void FishCenS::_loadFrame()
 	}
 
 	// Update the pipeline
-	if((_fcfuncs::millis()-_timers["pipeline"])>=PIPELINE_PERIOD)
+	if(!_pipelineOff && ((_fcfuncs::millis()-_timers["pipeline"])>=PIPELINE_PERIOD))
 	{
 		_timers["pipeline"] = _fcfuncs::millis();
 		_fishPipe.write(localFrame);

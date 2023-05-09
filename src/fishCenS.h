@@ -162,6 +162,11 @@ public:
 	void ledOff() { _ledOff = true; }
 
 	/**
+	 * @brief Turns pipeline off from command line
+	*/
+	void pipelineOff() { _pipelineOff = true; }
+
+	/**
 	 * @brief Tells sensor objects to close
 	*/
 	void closePeripherals();
@@ -174,6 +179,7 @@ private:
 	bool _displayOn;
 	bool _sensorsOff;
 	bool _ledOff;
+	bool _pipelineOff;
 
 	//Pigpio related stuff
 	int _ledPwmFreq;

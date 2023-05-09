@@ -14,13 +14,18 @@ int main(int argc, char *argv[])
     bool displayOn = false;
     bool sensorsOff = false;
     bool ledOff = false;
+	bool pipelineOff = false;
     int mode = 0;
 
     int opt;
-    while ((opt = getopt(argc, argv, "dslhm:")) != -1) 
+    while ((opt = getopt(argc, argv, "pdslhm:")) != -1) 
 	{
         switch (opt) 
 		{
+			case 'p':
+				pipelineOff = true;
+				std::cout << "Pipeline off (UDP)\n";
+				break;
             case 'd':
                 displayOn = true;
 				std::cout << "Display on\n";
@@ -54,8 +59,22 @@ int main(int argc, char *argv[])
 	
 	cout << "GPIO initialized and open\n\n";
 
+	
+		
 	FishCenS fc;
 	int initSuccess = false;
+
+	if(displayOn)
+		fc.displayOn();
+
+	if(sensorsOff)
+		fc.sensorsOff();
+
+	if(ledOff)
+		fc.ledOff();
+
+	if(pipelineOff)
+		fc.pipelineOff();
 
 	switch (mode)
 	{
@@ -96,15 +115,6 @@ int main(int argc, char *argv[])
 	
 	if(initSuccess>0)
 	{
-		if(displayOn)
-			fc.displayOn();
-
-		if(sensorsOff)
-			fc.sensorsOff();
-
-		if(ledOff)
-			fc.ledOff();
-			
 		//fc.setTesting(true);
 		fc.run();
 	}
@@ -118,6 +128,7 @@ int main(int argc, char *argv[])
 void printHelp()
 {
 	std::cout << "Usage: fishCenS [-d] [-s] [-l] [-m mode]" << std::endl;
+	std::cout << "\t-p\t\tPipeline off (UDP)" << std::endl;
 	std::cout << "\t-d\t\tDisplay on" << std::endl;
 	std::cout << "\t-s\t\tSensors off" << std::endl;
 	std::cout << "\t-l\t\tLED off" << std::endl;

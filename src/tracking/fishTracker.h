@@ -82,7 +82,7 @@ namespace _ft
 
 	const double MIN_FISH_AREA = 400;
 	const double MAX_FISH_AREA = 4000;
-	const double MIN_ROI_SCALE = 0.5;
+	const double MIN_ROI_SCALE = 0.25;
 	const double MAX_ROI_SCALE = 1.1;
 
 	//Struct keeping track of parameters of fish

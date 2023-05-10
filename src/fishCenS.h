@@ -48,7 +48,7 @@ namespace _fc
 	const double DEPTH_PERIOD = 2000; //2000 //ms
 	const double TEMPERATURE_PERIOD = 2000; //ms
 	const double SENSORS_PERIOD = 1000 * 4 ; //* 60; //ms -> 1 min
-	const double PIPELINE_PERIOD = 100; //ms
+	const double PIPELINE_PERIOD = 60; //ms
 	
 	const double TRACKING_TIMER = 30; // Just for update loop
 	
@@ -68,7 +68,7 @@ namespace _fc
 	const Point TEMP_STRING_POINT = Point(50, VIDEO_HEIGHT - 20);
 	
 	const Point FISH_INC_POINT = Point(10, 30);
-	const Point FISH_DEC_POINT = Point(260, 30);
+	const Point FISH_DEC_POINT = Point(350, 30);
 	
 	const double SENSOR_STRING_SIZE = 1.1;
 	const double SENSOR_STRING_THICKNESS = 2;

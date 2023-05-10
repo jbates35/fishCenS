@@ -357,7 +357,7 @@ int FishCenS::_draw()
 	// If display is off, just return - But we need the named window for the video record
 	// so that the key can be caught and the video can start to be recorded
 	// Also, if it's in calibration, we need that display anyway
-	if (!_displayOn && !(_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO))
+	if (!_displayOn && !_pipelineOff && !(_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO))
 	{
 		if (_mode == fcMode::VIDEO_RECORDER)
 		{
@@ -442,12 +442,20 @@ int FishCenS::_draw()
 		}
 	}
 
-	if (!localFrame.empty() && (_mode != fcMode::CALIBRATION && _mode != fcMode::CALIBRATION_WITH_VIDEO))
+	if (_displayOn && !localFrame.empty() && (_mode != fcMode::CALIBRATION && _mode != fcMode::CALIBRATION_WITH_VIDEO))
 	{
 		imshow("Video", localFrame);
 	}
 
 	_returnKey = waitKey(1);
+
+	// Update the pipeline
+	if(!_pipelineOff && ((_fcfuncs::millis()-_timers["pipeline"])>=PIPELINE_PERIOD))
+	{
+		_timers["pipeline"] = _fcfuncs::millis();
+		_fishPipe.write(localFrame);
+		//cout << "Pipeline time: " << _fcfuncs::millis() - _timers["pipeline"] << "ms" << endl;
+	}
 
 	return 1;
 }
@@ -920,14 +928,6 @@ void FishCenS::_loadFrame()
 	// {
 	// 	_fcfuncs::writeLog(_fcLogger, "Frame skip\n", true);
 	// }
-
-	// Update the pipeline
-	if(!_pipelineOff && ((_fcfuncs::millis()-_timers["pipeline"])>=PIPELINE_PERIOD))
-	{
-		_timers["pipeline"] = _fcfuncs::millis();
-		_fishPipe.write(localFrame);
-		//cout << "Pipeline time: " << _fcfuncs::millis() - _timers["pipeline"] << "ms" << endl;
-	}
 }
 
 void FishCenS::_loadFrameThread(FishCenS *ptr)

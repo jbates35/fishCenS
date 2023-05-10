@@ -11,7 +11,7 @@ from pycoral.utils.edgetpu import make_interpreter
 
 # Specify the TensorFlow model, labels, and image
 script_dir = pathlib.Path(__file__).parent.absolute()
-model_file = os.path.join(script_dir, 'models/efficientdet-lite-fishcens_edgetpu.tflite')
+model_file = os.path.join(script_dir, 'models/FishCenS_FPN_edgetpu.tflite')
 
 # Initialize the TF interpreter
 interpreter = make_interpreter(model_file)

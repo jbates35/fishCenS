@@ -42,12 +42,12 @@ namespace _fc
 	const int MAX_LOG_SIZE	= 5000; //Max amount of lines the logger can have before erasing start
 	
 	//For timers (typically in milliseconds)
-	const double DRAW_FPS = 15; //FPS of opencv imshow
+	const double DRAW_FPS = 30; //FPS of opencv imshow
 	const double DRAW_PERIOD = 1000 / DRAW_FPS; //Period of opencv imshow in milliseconds
 	
 	const double DEPTH_PERIOD = 2000; //2000 //ms
 	const double TEMPERATURE_PERIOD = 2000; //ms
-	const double SENSORS_PERIOD = 1000 * 60; //ms -> 1 min
+	const double SENSORS_PERIOD = 1000 * 4 ; //* 60; //ms -> 1 min
 	const double PIPELINE_PERIOD = 100; //ms
 	
 	const double TRACKING_TIMER = 30; // Just for update loop
@@ -61,18 +61,18 @@ namespace _fc
 	
 	//For calibration mode
 	const double MAX_WIDTH_PER_FRAME = 640;
-	const double MAX_HEIGHT_PER_FRAME = 360;
+	const double MAX_HEIGHT_PER_FRAME = 480;
 	
 	//For putting sensor information
 	const Point DEPTH_STRING_POINT = Point(50, VIDEO_HEIGHT - 40);
 	const Point TEMP_STRING_POINT = Point(50, VIDEO_HEIGHT - 20);
 	
-	const Point FISH_INC_POINT = Point(50, 30);
-	const Point FISH_DEC_POINT = Point(50, 50);
+	const Point FISH_INC_POINT = Point(10, 30);
+	const Point FISH_DEC_POINT = Point(260, 30);
 	
-	const double SENSOR_STRING_SIZE = 1;
+	const double SENSOR_STRING_SIZE = 1.1;
 	const double SENSOR_STRING_THICKNESS = 2;
-	
+	const Scalar SENSOR_COLOR = Scalar(235,255,180);
 	//LED PWM DC related
 	const int LED_DEFAULT_PWM_MIN = 200000;
 	const int LED_DEFAULT_PWM_MAX = 500000;

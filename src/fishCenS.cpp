@@ -172,8 +172,10 @@ int FishCenS::init(fcMode mode)
 		_camFPS = CAM_FPS;
 		_camPeriod = 1000 / _camFPS; // in millis
 
-		//_cam.options->video_width = VIDEO_WIDTH;
-		//_cam.options->video_height = VIDEO_HEIGHT;
+		_cam.options->photo_width = VIDEO_WIDTH;
+		_cam.options->photo_height = VIDEO_HEIGHT;
+		_cam.options->video_width = VIDEO_WIDTH;
+		_cam.options->video_height = VIDEO_HEIGHT;
 		_cam.options->verbose = 1;
 		_cam.options->list_cameras = true;
 		_cam.options->framerate = _camFPS;
@@ -343,6 +345,15 @@ int FishCenS::init(fcMode mode)
 
 int FishCenS::_draw()
 {
+
+	std::unique_lock<std::mutex> singleLock(_singletonDraw, std::try_to_lock);
+
+	if (!singleLock.owns_lock())
+	{
+		return 0;
+	}
+
+
 	// If display is off, just return - But we need the named window for the video record
 	// so that the key can be caught and the video can start to be recorded
 	// Also, if it's in calibration, we need that display anyway
@@ -367,11 +378,11 @@ int FishCenS::_draw()
 
 		for (auto matsStruct : _returnMats)
 		{
-			putText(matsStruct.mat, "Mat: " + matsStruct.title, Point(5, 15), FONT_HERSHEY_PLAIN, 0.6, Scalar(155, 230, 255), 1);
+			putText(matsStruct.mat, "Mat: " + matsStruct.title, Point(5, 15), FONT_HERSHEY_PLAIN, 0.9, Scalar(255, 190, 100), 1);
 		}
 
-		string fishCountIncStr = "Fish counter -> upstream:    " + to_string(_fishIncremented);
-		string fishCountDecstr = "Fish counter -> downstream:  " + to_string(_fishDecremented);
+		string fishCountIncStr = "Fish -> upstream: " + to_string(_fishIncremented);
+		string fishCountDecstr = "Fish -> downstream: " + to_string(_fishDecremented);
 
 		putText(_returnMats[0].mat, fishCountIncStr, FISH_INC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
 		putText(_returnMats[0].mat, fishCountDecstr, FISH_DEC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
@@ -414,7 +425,7 @@ int FishCenS::_draw()
 	}
 
 	// With tracking mode, we need sensor information (Maybe need this for calibration mode w video too?)
-	if (_mode == fcMode::TRACKING)
+	if (_mode == fcMode::TRACKING && !_sensorsOff)
 	{
 		// Sensor strings to put on screen
 		{
@@ -545,25 +556,26 @@ int FishCenS::_showRectInfo(Mat &im)
 	}
 
 	// Fish information
-	string fishCountIncStr = "Fish counted upstream: " + to_string(_fishIncremented);
-	string fishCountDecstr = "Fish counted downstream: " + to_string(_fishDecremented);
+	string fishCountIncStr = "Fish -> upstream: " + to_string(_fishIncremented);
+	string fishCountDecstr = "Fish -> downstream: " + to_string(_fishDecremented);
 
-	putText(im, fishCountIncStr, FISH_INC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
-	putText(im, fishCountDecstr, FISH_DEC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+
+	putText(im, fishCountIncStr, FISH_INC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, SENSOR_COLOR, SENSOR_STRING_THICKNESS);
+	putText(im, fishCountDecstr, FISH_DEC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, SENSOR_COLOR, SENSOR_STRING_THICKNESS);
 
 	// ML Data drawn
 	for (auto fishML : _objDetectData)
 	{
 		string scoreStr = "Score: " + to_string(fishML.score);
-		putText(im, scoreStr, Point(fishML.ROI.x, fishML.ROI.y - 5), FONT_HERSHEY_PLAIN, 0.7, (130, 0, 180), 1);
+		putText(im, scoreStr, Point(fishML.ROI.x, fishML.ROI.y - 5), FONT_HERSHEY_PLAIN, 1, (130, 0, 180), 2);
 
-		rectangle(im, fishML.ROI, Scalar(130, 0, 180), 2);
+		rectangle(im, fishML.ROI, Scalar(130, 0, 180), 3);
 	}
 
 	// Fish ROIs drawn + other information
 	for (auto fish : _trackedData)
 	{
-		rectangle(im, fish.roi, Scalar(0, 255, 0), 1);
+		rectangle(im, fish.roi, Scalar(0, 255, 0), 3);
 
 		vector<String> rectString;
 
@@ -573,8 +585,8 @@ int FishCenS::_showRectInfo(Mat &im)
 
 		for (auto i = 0; i < (int)rectString.size(); i++)
 		{
-			putText(im, rectString[i], textPoint, FONT_HERSHEY_PLAIN, 0.7, Scalar(0, 255, 0), 1);
-			textPoint.y += 10;
+			putText(im, rectString[i], textPoint, FONT_HERSHEY_PLAIN, 1, Scalar(0, 255, 0), 2);
+			textPoint.y += 15;
 		}
 	}
 
@@ -595,6 +607,8 @@ void FishCenS::_setLED()
 		return;
 	}
 
+	gpioHardwarePWM(LED_PIN, _ledPwmFreq, 100000);
+	/*
 	if (_ledOff)
 	{
 		gpioHardwarePWM(LED_PIN, _ledPwmFreq, 0);
@@ -657,6 +671,7 @@ void FishCenS::_setLED()
 		// Set the PWM value of the gpioPin to pwmVal
 		gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
 	}
+	*/
 }
 
 void FishCenS::_manageVideoRecord()
@@ -706,6 +721,15 @@ void FishCenS::_trackerUpdate()
 	int localFishInc, localFishDec;
 	{
 		scoped_lock trackerLock(_trackerLock);
+
+		//Reset
+		if (_returnKey == '0')
+		{
+			_returnKey = '\0';
+			_fishIncremented=0;
+			_fishDecremented=0;
+		}
+
 		localFishInc = _fishIncremented;
 		localFishDec = _fishDecremented;
 	}
@@ -886,15 +910,16 @@ void FishCenS::_loadFrame()
 		//resize(localFrame, localFrame, Size(_videoWidth, _videoHeight));
 	}
 
-	std::unique_lock<std::mutex> frameLock(_frameLock, std::try_to_lock);
-	if (frameLock.owns_lock())
+	// std::unique_lock<std::mutex> frameLock(_frameLock, std::try_to_lock);
+	// if (frameLock.owns_lock())
 	{
+		scoped_lock frameLock(_frameLock);
 		_frame = localFrame;
 	}
-	else
-	{
-		_fcfuncs::writeLog(_fcLogger, "Frame skip\n", true);
-	}
+	// else
+	// {
+	// 	_fcfuncs::writeLog(_fcLogger, "Frame skip\n", true);
+	// }
 
 	// Update the pipeline
 	if(!_pipelineOff && ((_fcfuncs::millis()-_timers["pipeline"])>=PIPELINE_PERIOD))

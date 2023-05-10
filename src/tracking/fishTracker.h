@@ -80,8 +80,8 @@ namespace _ft
 	//Disregard ROIs that reach both the top and bottom 0.2 of the shot.
 	const double TOP_AND_BOTTOM_CLIPS = 0.3;
 
-	const double MIN_FISH_AREA = 1000;
-	const double MAX_FISH_AREA = 15000;
+	const double MIN_FISH_AREA = 400;
+	const double MAX_FISH_AREA = 4000;
 	const double MIN_ROI_SCALE = 0.5;
 	const double MAX_ROI_SCALE = 1.1;
 

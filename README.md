@@ -10,6 +10,31 @@ $ sudo bash installFishCenS.sh
 ```
 
 Hopefully I remembered everything.
+------------
+
+https://qengineering.eu/install-opencv-4.5-on-raspberry-64-os.html
+This guide is used to install opencv
+
+You'll likely need to follow the memory swap lines:
+$ sudo nano /usr/bin/zram.sh
+
+write:
+	mem=$(( ($totalmem / $cores)* 1024 * 3))
+
+$ sudo reboot
+
+Then run the installFishCenS.txt script.
+Then:
+
+$ git clone https://github.com/foundObjects/zram-swap
+$ cd zram-swap
+$ sudo bash install.sh
+$ sudo nano /etc/dphys-swapfile
+
+write:
+	set CONF_SWAPSIZE=100 with the Nano text editor
+
+$ sudo reboot
 
 ---------------------------
 
@@ -138,29 +163,6 @@ Temperature sensor: https://www.sparkfun.com/products/11050
 Next part coming up soon...
 Hint: See GDrive (and the function that allows you to DL gdrive links)
 ```
-------------
-
-https://qengineering.eu/install-opencv-4.5-on-raspberry-64-os.html
-This guide is used to install opencv
-
-You'll likely need to follow the memory swap lines:
-$ sudo nano /usr/bin/zram.sh
-
-write:
-	mem=$(( ($totalmem / $cores)* 1024 * 3))
-
-$ sudo reboot
-
-Then run the installFishCenS.txt script.
-Then:
-
-
-$ sudo nano /etc/dphys-swapfile
-
-write:
-	set CONF_SWAPSIZE=100 with the Nano text editor
-
-$ sudo reboot
 
 ------------
 

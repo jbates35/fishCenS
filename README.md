@@ -115,7 +115,107 @@ TX (Val)    -> White/Green
 *Note Ultrasonic sensor VCC can be 3.3V or 5V*
 
 Temperature sensor: https://www.sparkfun.com/products/11050
+
+------------
+
+https://qengineering.eu/install-opencv-4.5-on-raspberry-64-os.html
+This guide is used to install opencv
+
+You'll likely need to follow the memory swap lines:
+$ sudo nano /usr/bin/zram.sh
+
+write:
+	mem=$(( ($totalmem / $cores)* 1024 * 3))
+
+$ sudo reboot
+
+Then run the installFishCenS.txt script.
+Then:
+
+
+$ sudo nano /etc/dphys-swapfile
+
+write:
+	set CONF_SWAPSIZE=100 with the Nano text editor
+
+$ sudo reboot
+
+------------
+
+Note that there are two systemctls:
+
+fishcens.service
+fcserver.service
+
+I just assumed you installed the program in the "~" folder, with the username "pi".
+Just make sure the scripts link to the correct file. It should be clear which folder paths need to be changed.
+
+Systemctl files tell the OS what to do when you boot the Pi, or other scenarios that happen during an OS's runtime. There are a couple commands necessary for using systemctl files:
+
+- sudo systemctl enable fishcens.service
+This will tell the computer to run this script on startup
+
+- sudo systemctl disable fishcens.service
+This will tell the computer to stop running this script on startup
+
+- sudo systemctl start fishcens.service
+This will run the script, i.e., start the program
+
+- sudo systemctl stop fishcens.service
+This will stop the script, i.e. stop the program
+
+When deploying, you'll want to enable both fishcens.service and fcserver. I have not enabled these with the shell script. If you don't know they're going on, they can be quite heavy on the Pi and can be confusing when you go to test the main program and it can't open the camera.
+
+------------
+
+You will have to configure the NGINX server:
+
+$ cd /etc/nginx/sites-available/
+$ sudo nano default
+
+Then change the script to reflect something like this:
+
 ```
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+
+        root /home/pi/fcServer;
+
+        server_name _;
+
+        location / {
+                proxy_pass http://localhost:5000;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+        }
+
+        location /fishPictures/ {
+                alias /home/pi/fishCenS/build/fishPictures/;
+        }
+}
+```
+
+Check the veracity of:
+
+$ sudo nginx -t
+
+Then restart the nginx server:
+
+$ sudo systemctl restart nginx
+
+NGINX is a server program for your machine (think Apache). What editing the default file does is tells NGINX to load the Python flask proxy (i.e. the website) when the IP of the Pi is put into the browser of a computer connected to the same network (i.e. connected to the router the Pi is also on).
+
+------------
+
+I hope the google drive download link worked. But if not, here's the link: https://drive.google.com/drive/folders/1xp-MMvOHN0dpLNeSs2ASOwO7C8mZ74f9?usp=share_link
+
+------------
+
+Follow this to install the RTC module:
+
+https://pimylifeup.com/raspberry-pi-rtc/
+
 Vcc   -> Red
 Gnd   -> Black
 Sig   -> White

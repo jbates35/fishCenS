@@ -11,20 +11,20 @@ apt update
 apt upgrade
 
 # dependencies
-apt-get install build-essential cmake git unzip pkg-config
-apt-get install libjpeg-dev libpng-dev
-apt-get install libavcodec-dev libavformat-dev libswscale-dev
-apt-get install libgtk2.0-dev libcanberra-gtk* libgtk-3-dev
-apt-get install libgstreamer1.0-dev gstreamer1.0-gtk3
-apt-get install libgstreamer-plugins-base1.0-dev gstreamer1.0-gl
-apt-get install libxvidcore-dev libx264-dev
-apt-get install python3-dev python3-numpy python3-pip
-apt-get install libtbb2 libtbb-dev libdc1394-22-dev
-apt-get install libv4l-dev v4l-utils
-apt-get install libopenblas-dev libatlas-base-dev libblas-dev
-apt-get install liblapack-dev gfortran libhdf5-dev
-apt-get install libprotobuf-dev libgoogle-glog-dev libgflags-dev
-apt-get install protobuf-compiler
+apt-get -y install build-essential cmake git unzip pkg-config
+apt-get -y install libjpeg-dev libpng-dev
+apt-get -y install libavcodec-dev libavformat-dev libswscale-dev
+apt-get -y install libgtk2.0-dev libcanberra-gtk* libgtk-3-dev
+apt-get -y install libgstreamer1.0-dev gstreamer1.0-gtk3
+apt-get -y  install libgstreamer-plugins-base1.0-dev gstreamer1.0-gl
+apt-get -y install libxvidcore-dev libx264-dev
+apt-get -y install python3-dev python3-numpy python3-pip
+apt-get -y install libtbb2 libtbb-dev libdc1394-22-dev
+apt-get -y install libv4l-dev v4l-utils
+apt-get -y install libopenblas-dev libatlas-base-dev libblas-dev
+apt-get -y install liblapack-dev gfortran libhdf5-dev
+apt-get -y  install libprotobuf-dev libgoogle-glog-dev libgflags-dev
+apt-get -y install protobuf-compiler
 
 wget -O opencv.zip https://github.com/opencv/opencv/archive/4.5.5.zip
 wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/4.5.5.zip

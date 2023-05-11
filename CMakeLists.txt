@@ -23,6 +23,7 @@ add_executable(fishCenS src/main.cpp
 src/fishCenS.cpp src/fishCenS.h
 src/tracking/fishTracker.cpp src/tracking/fishTracker.h
 src/tracking/fishMLWrapper.cpp src/tracking/fishMLWrapper.h
+src/tracking/fishPipe.cpp src/tracking/fishPipe.h
 src/gui/gui.cpp src/gui/gui.h
 src/gui/imex.cpp src/gui/imex.h
 src/gui/cvui.h
@@ -120,13 +121,15 @@ find_package(PkgConfig REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Threads REQUIRED)
 find_package(PostgreSQL REQUIRED)
+find_package(Boost REQUIRED COMPONENTS system)
+
 
 pkg_check_modules(LIBCAMERA REQUIRED libcamera)
 message(STATUS "libcamera library found:")
 message(STATUS "    version: ${LIBCAMERA_VERSION}")
 message(STATUS "    libraries: ${LIBCAMERA_LINK_LIBRARIES}")
 message(STATUS "    include path: ${LIBCAMERA_INCLUDE_DIRS}")
-include_directories(include ${PYTHON_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIRS} ${LIBCAMERA_INCLUDE_DIRS} ${pigpio_INCLUDE_DIR} ${OPENCV_INCLUDE_DIRS} ${PostgreSQL_INCLUDE_DIRS})
+include_directories(include ${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIRS} ${LIBCAMERA_INCLUDE_DIRS} ${pigpio_INCLUDE_DIR} ${OPENCV_INCLUDE_DIRS} ${PostgreSQL_INCLUDE_DIRS})
 
 # Add these settings for performance optimization
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -march=native")
@@ -134,4 +137,4 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Ofast -march=native")
 set_target_properties(fishCenS PROPERTIES PREFIX "" IMPORT_PREFIX "")
 
 #Specify any required libraries
-target_link_libraries(fishCenS ${PYTHON_LIBRARIES} ${NUMPY_LIBRARIES} ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${PostgreSQL_LIBRARIES} pqxx)
+target_link_libraries(fishCenS ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${NUMPY_LIBRARIES} ${LIBCAMERA_LINK_LIBRARIES} ${pigpio_LIBRARY} ${pigpiod_if_LIBRARY} ${pigpiod_if2_LIBRARY} ${OpenCV_LIBS} ${CMAKE_THREAD_LIBS_INIT} ${PostgreSQL_LIBRARIES} pqxx)

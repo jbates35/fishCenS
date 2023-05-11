@@ -56,6 +56,8 @@ In the cmake file, whenever you add a new file, you want to add it here:
 If you prefer working in codeblocks, refer to this stackoverflow page on how to do so:
 https://stackoverflow.com/questions/37618040/how-to-create-a-codeblocks-project-from-the-cmake-file
 
+-------------
+
 TEMPERATURE SENSOR.
 
 On Raspberry Pi go Preferances -> Raspberry Pi Configuration -> Interfaces 
@@ -73,12 +75,14 @@ connected sensor by using commands to navigate to /sys/bus/w1/devices and
 using the ls command. The sensor will appear as 28-0xxxxxxxxxxx. Replace
 this number with the written in the code.
 
+--------------
+
 ULTRASONIC.
 
 On the Pi go to Preferences -> Raspberry Pi Configurations -> Interfaces
 and toggle on Serial Port.
 
-The snesor needs a 5V supply, ground and connect the sensor output to GPIO 15 (physical pin 10).
+The sensor needs a 3.3V supply, ground and connect the sensor output to GPIO 15 (physical pin 10).
 
 The default serial pin uses a miniUart module which can be unstable
 when the pi is under heavy load, so we will change the pin to connect to
@@ -102,7 +106,6 @@ serial0 -> tty0AMA
 
 serial1 -> ttyS0
 
-
 PIN/Colors:
 Ultrasonic sensor: https://wiki.dfrobot.com/_A02YYUW_Waterproof_Ultrasonic_Sensor_SKU_SEN0311
 Note: Signals are from perspective of sensor
@@ -116,6 +119,14 @@ TX (Val)    -> White/Green
 
 Temperature sensor: https://www.sparkfun.com/products/11050
 
+```
+*Note Temperature sensor VCC needs to be be 3.3V*
+
+### You will have to add models, labels, and possibly vids to the py folder
+
+Next part coming up soon...
+Hint: See GDrive (and the function that allows you to DL gdrive links)
+```
 ------------
 
 https://qengineering.eu/install-opencv-4.5-on-raspberry-64-os.html
@@ -219,10 +230,4 @@ https://pimylifeup.com/raspberry-pi-rtc/
 Vcc   -> Red
 Gnd   -> Black
 Sig   -> White
-```
-*Note Temperature sensor VCC can be 3.3V or 5V*
 
-### You will have to add models, labels, and possibly vids to the py folder
-
-Next part coming up soon...
-Hint: See GDrive (and the function that allows you to DL gdrive links)

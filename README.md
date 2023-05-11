@@ -1,12 +1,16 @@
 # fishCenS
+
 A fish-counting system that can be used to track salmon as they swim upstream creeks
 
 ----------------------------
+
 Once cloned, run the command
 ```bash
-$ bash installFishCenS.sh
+$ sudo bash installFishCenS.sh
 ```
+
 Hopefully I remembered everything.
+
 ---------------------------
 
 Some things that need to be installed first:

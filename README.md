@@ -254,6 +254,22 @@ $ sudo -u fishcens psql -d fcdb -f ~/sql/fcTableCreate.sql
 ```
 -------------
 
+Another thing that needs to be done that's kind-of annoying is locating numpy's folder and telling CMakeLists.txt where it is.
+
+To do so, run this command
+
+```linux
+sudo find / -name numpy
+```
+
+You'll likely see a few directories pop up, depending on the amount of python virtual environments and different versions of python having installed numpy available. Copy the folder directory, in my case it's "/usr/include/python3.9/numpy". Then write in CMakeLists.txt:
+
+```
+include_directories(/usr/include/python3.9/numpy/)
+```
+Somewhere before the target_link_libraries line.
+
+-------------
 I hope the google drive download link worked. But if not, here's the link: https://drive.google.com/drive/folders/1xp-MMvOHN0dpLNeSs2ASOwO7C8mZ74f9?usp=share_link
 
 ------------

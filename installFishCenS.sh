@@ -73,6 +73,25 @@ apt update
 rm -rf ~/opencv
 rm -rf ~/opencv_contrib
 
+#Reinstall libcamera
+apt remove -y libcamera*
+apt install -y python3-pip git
+pip3 install jinja2
+
+apt install -y libboost-dev
+apt install -y libgnutls28-dev openssl libtiff5-dev
+apt install -y qtbase5-dev libqt5core5a libqt5gui5 libqt5widgets5
+apt install -y meson
+pip3 install pyyaml ply
+pip3 install --upgrade meson
+apt install -y libglib2.0-dev libgstreamer-plugins-base1.0-dev
+cd
+git clone git://linuxtv.org/libcamera.git
+cd libcamera
+meson build --buildtype=release -Dpipelines=auto -Dipas=rpi/vc4 -Dv4l2=true -Dgstreamer=enabled -Dtest=false -Dlc-compliance=disabled -Dcam=disabled -Dqcam=enabled -Ddocumentation=disabled
+ninja -C build   # use -j 2 on Pi 3 or earlier devices
+ninja -C build install
+
 #Installing server dependencies
 echo ">> Installing Server dependencies"
 apt-get install libpq-dev
@@ -150,6 +169,9 @@ apt-get install -y postgresql postgresql-contrib
 
 # Install Python 3 and pip
 apt-get install -y python3 python3-pip
+
+#Install pqxx
+apt install libpqxx-dev
 
 # Install Flask and required packages
 pip3 install flask

@@ -156,14 +156,12 @@ TX (Val)    -> White/Green
 
 Temperature sensor: https://www.sparkfun.com/products/11050
 
-```
 *Note Temperature sensor VCC needs to be be 3.3V*
 
-### You will have to add models, labels, and possibly vids to the py folder
 
-Next part coming up soon...
-Hint: See GDrive (and the function that allows you to DL gdrive links)
-```
+Vcc   -> Red
+Gnd   -> Black
+Sig   -> White
 
 ------------
 
@@ -263,8 +261,4 @@ I hope the google drive download link worked. But if not, here's the link: https
 Follow this to install the RTC module:
 
 https://pimylifeup.com/raspberry-pi-rtc/
-
-Vcc   -> Red
-Gnd   -> Black
-Sig   -> White
 

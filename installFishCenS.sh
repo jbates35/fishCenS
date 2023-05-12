@@ -97,6 +97,7 @@ apt update && apt upgrade -y
 echo ">> Installing pycoral..."
 echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
 curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+apt update
 apt-get install -y libedgetpu1-std
 apt-get install -y python3-pycoral
 

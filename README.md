@@ -256,10 +256,10 @@ $ sudo -u fishcens psql -d fcdb -f ~/sql/fcTableCreate.sql
 
 Another thing that needs to be done that's kind-of annoying is locating numpy's folder and telling CMakeLists.txt where it is.
 
-To do so, run this command
+To do so, run this command in terminal
 
 ```linux
-sudo find / -name numpy
+$ sudo find / -name numpy
 ```
 
 You'll likely see a few directories pop up, depending on the amount of python virtual environments and different versions of python having installed numpy available. Copy the folder directory, in my case it's "/usr/include/python3.9/numpy". Then write in CMakeLists.txt:

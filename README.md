@@ -177,27 +177,32 @@ Just make sure the scripts link to the correct file. It should be clear which fo
 
 Systemctl files tell the OS what to do when you boot the Pi, or other scenarios that happen during an OS's runtime. There are a couple commands necessary for using systemctl files:
 
-- sudo systemctl enable fishcens.service
-This will tell the computer to run this script on startup
-
-- sudo systemctl disable fishcens.service
-This will tell the computer to stop running this script on startup
-
-- sudo systemctl start fishcens.service
-This will run the script, i.e., start the program
-
-- sudo systemctl stop fishcens.service
-This will stop the script, i.e. stop the program
+```
+sudo systemctl enable fishcens.service
+# This will tell the computer to run this script on startup
+```
+```
+sudo systemctl disable fishcens.service
+# This will tell the computer to stop running this script on startup
+```
+```
+sudo systemctl start fishcens.service
+# This will run the script, i.e., start the program
+```
+```
+sudo systemctl stop fishcens.service 
+# This will stop the script, i.e. stop the program
+```
 
 When deploying, you'll want to enable both fishcens.service and fcserver. I have not enabled these with the shell script. If you don't know they're going on, they can be quite heavy on the Pi and can be confusing when you go to test the main program and it can't open the camera.
 
 ------------
 
 You will have to configure the NGINX server:
-
+```
 $ cd /etc/nginx/sites-available/
 $ sudo nano default
-
+```
 Then change the script to reflect something like this:
 
 ```
@@ -222,13 +227,13 @@ server {
 ```
 
 Check the veracity of:
-
+```
 $ sudo nginx -t
-
+```
 Then restart the nginx server:
-
+```
 $ sudo systemctl restart nginx
-
+```
 NGINX is a server program for your machine (think Apache). What editing the default file does is tells NGINX to load the Python flask proxy (i.e. the website) when the IP of the Pi is put into the browser of a computer connected to the same network (i.e. connected to the router the Pi is also on).
 
 ------------

@@ -115,7 +115,7 @@ pip install gdown
 echo ">> Downloading additional files for program..."
 cd $DIR
 
-gdown --folder https://drive.google.com/drive/folders/1SJBkccKM8vbffXaolVdfYW8ZJnETbQMr
+gdown --folder https://drive.google.com/drive/folders/1xp-MMvOHN0dpLNeSs2ASOwO7C8mZ74f9
 
 cd fishCensDependencies
 
@@ -134,10 +134,6 @@ mkdir build/vid
 mkdir build/models
 cp -R $DIR/py/vid/* $DIR/build/vid
 cp -R $DIR/py/models/* $DIR/build/models
-
-cd build
-cmake ..
-make -j4
 
 chmod +x $DIR/*.sh
 

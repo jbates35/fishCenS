@@ -250,7 +250,7 @@ GRANT ALL PRIVILEGES ON DATABASE fcdb TO fishcens;
 ```
 Then in bash:
 ```linux
-$ sudo -u fishcens psql -d fcdb -f ~/sql/fcTableCreate
+$ sudo -u fishcens psql -d fcdb -f ~/sql/fcTableCreate.sql
 ```
 -------------
 

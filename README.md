@@ -8,8 +8,8 @@ Once cloned, run the command
 ```bash
 $ sudo bash installFishCenS.sh
 ```
-
 Hopefully I remembered everything.
+
 ------------
 
 https://qengineering.eu/install-opencv-4.5-on-raspberry-64-os.html

@@ -16,26 +16,27 @@ https://qengineering.eu/install-opencv-4.5-on-raspberry-64-os.html
 This guide is used to install opencv
 
 You'll likely need to follow the memory swap lines:
+```
 $ sudo nano /usr/bin/zram.sh
-
+```
 write:
 	mem=$(( ($totalmem / $cores)* 1024 * 3))
-
+```
 $ sudo reboot
-
+```
 Then run the installFishCenS.txt script.
 Then:
-
+```
 $ git clone https://github.com/foundObjects/zram-swap
 $ cd zram-swap
 $ sudo bash install.sh
 $ sudo nano /etc/dphys-swapfile
-
+```
 write:
 	set CONF_SWAPSIZE=100 with the Nano text editor
-
+```
 $ sudo reboot
-
+```
 ---------------------------
 
 Some things that need to be installed first:
@@ -231,6 +232,24 @@ $ sudo systemctl restart nginx
 NGINX is a server program for your machine (think Apache). What editing the default file does is tells NGINX to load the Python flask proxy (i.e. the website) when the IP of the Pi is put into the browser of a computer connected to the same network (i.e. connected to the router the Pi is also on).
 
 ------------
+
+After installing the script, you must also make the postgresql table/user/db:
+
+```linux
+sudo -u postgres psql
+```
+Then enter the commands:
+```sql
+CREATE USER fishcens WITH PASSWORD 'fishcens';
+CREATE DATABASE fcdb;
+GRANT ALL PRIVILEGES ON DATABASE fcdb TO fishcens;
+\q
+```
+Then in bash:
+```linux
+$ sudo -u fishcens psql -d fcdb -f ~/sql/fcTableCreate
+```
+-------------
 
 I hope the google drive download link worked. But if not, here's the link: https://drive.google.com/drive/folders/1xp-MMvOHN0dpLNeSs2ASOwO7C8mZ74f9?usp=share_link
 

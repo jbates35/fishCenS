@@ -170,6 +170,9 @@ apt-get install -y postgresql postgresql-contrib
 # Install Python 3 and pip
 apt-get install -y python3 python3-pip
 
+# Install ap scheduler for background tasks
+pip3 install apscheduler
+
 #Install pqxx
 apt install libpqxx-dev
 

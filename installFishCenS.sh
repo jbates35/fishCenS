@@ -172,6 +172,7 @@ apt-get install -y python3 python3-pip
 
 # Install ap scheduler for background tasks
 pip3 install apscheduler
+pip3 install matplotlib
 
 #Install pqxx
 apt install libpqxx-dev

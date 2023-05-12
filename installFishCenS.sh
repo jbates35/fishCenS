@@ -111,7 +111,8 @@ python3 -m pip install opencv-contrib-python==4.5.5.64
 apt-get -y install libgl1-mesa-glx
 
 echo ">> Installing gdown..."
-pip install gdown
+apt-get install python3-pip
+pip3 install gdown
 
 echo ">> Downloading additional files for program..."
 cd $DIR

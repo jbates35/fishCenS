@@ -15,10 +15,11 @@ int main(int argc, char *argv[])
     bool sensorsOff = false;
     bool ledOff = false;
 	bool pipelineOff = false;
+	bool dehazeOff = false;
     int mode = 0;
 
     int opt;
-    while ((opt = getopt(argc, argv, "pdslhm:")) != -1) 
+    while ((opt = getopt(argc, argv, "pdslhzm:")) != -1) 
 	{
         switch (opt) 
 		{
@@ -38,6 +39,10 @@ int main(int argc, char *argv[])
                 ledOff = true;
 				std::cout << "LED off\n"; 
                 break;
+			case 'z':
+				dehazeOff = true;
+				std::cout << "Dehaze off\n";
+				break;
 			case 'h':
 				printHelp();
 				return 0;
@@ -75,6 +80,9 @@ int main(int argc, char *argv[])
 
 	if(pipelineOff)
 		fc.pipelineOff();
+	
+	if(dehazeOff)
+		fc.dehazeOff();
 
 	switch (mode)
 	{

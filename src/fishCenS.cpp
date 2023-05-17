@@ -43,6 +43,7 @@ FishCenS::FishCenS()
 	_sensorsOff = false;
 	_ledOff = false;
 	_pipelineOff = false;
+	_dehazeOff = false;
 
 }
 
@@ -216,6 +217,10 @@ int FishCenS::init(fcMode mode)
 	// Initiate test video file
 	if (_mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
+		// FPS
+		_camFPS = CAM_FPS;
+		_camPeriod = 1000 / _camFPS; // in millis
+
 		// LIST FILES IN VIDEO DIRECTORY AND THEN
 		// ALLOW USER TO CHOOSE THE FILE THEYD LIKE TO SEE
 		string selectedVideoFile;
@@ -234,8 +239,6 @@ int FishCenS::init(fcMode mode)
 			return -1;
 		}
 
-		cout << "LOADED VIDEO....\n\n\n\n\n" << endl;
-		
 		// Load frame to do analysis
 		_vid >> _frame;
 
@@ -249,11 +252,30 @@ int FishCenS::init(fcMode mode)
 		_vidFPS = _vid.get(CAP_PROP_FPS);
 		_vidPeriod = 1000 / _vidFPS;
 
+		float rawVidWidth = _vid.get(CAP_PROP_FRAME_WIDTH);
+		float rawVidHeight = _vid.get(CAP_PROP_FRAME_HEIGHT);
+
+		float rawAspectRatio = rawVidWidth / rawVidHeight;
+		float postAspectRatio = MAX_WIDTH_PER_FRAME / MAX_HEIGHT_PER_FRAME;
+
+		float scaleFactor = 1;
+
+		// If the aspect ratio is too big, we need to resize the video
+		if(rawAspectRatio >= postAspectRatio)
+		{
+			scaleFactor = MAX_WIDTH_PER_FRAME / rawVidWidth;
+		}
+		else
+		{
+			scaleFactor = MAX_HEIGHT_PER_FRAME / rawVidHeight;
+		}
+
 		// Set class video width and height for tracker
-		_videoWidth = _frame.size().width * VIDEO_SCALE_FACTOR;
-		_videoHeight = _frame.size().height * VIDEO_SCALE_FACTOR;
+		_videoWidth = _frame.size().width * scaleFactor;
+		_videoHeight = _frame.size().height * scaleFactor;
 		_frameSize = Size(_videoWidth, _videoHeight);
-		//resize(_frame, _frame, _frameSize);
+
+		resize(_frame, _frame, _frameSize);
 
 		// Keep track of frames during playback so it can be looped at last frame
 		_vidNextFramePos = 0;
@@ -361,6 +383,7 @@ int FishCenS::_draw()
 		return 0;
 	}
 
+	double currTime = _fcfuncs::millis();
 
 	// If display is off, just return - But we need the named window for the video record
 	// so that the key can be caught and the video can start to be recorded
@@ -470,10 +493,10 @@ int FishCenS::_draw()
 		fishPipe.init("", "239.254.0.3", 30002);
 		fishPipe.write(localFrame);
 		fishPipe.close();
-
-		cout << "Pipeline time: " << _fcfuncs::millis() - _timers["pipeline"] << "ms" << endl;
 	}
 	
+	_fcfuncs::writeLog(_fcLogger, "Draw time: " + to_string(_fcfuncs::millis() - currTime) + "ms", true);
+
 	return 1;
 }
 
@@ -514,14 +537,14 @@ void FishCenS::_videoRunThread(FishCenS *ptr)
 
 void FishCenS::_sensors()
 {
-	cout << "Thread starting..." << endl;
-
 	unique_lock<mutex> singleLock(_sensorsLock, try_to_lock);
 	
 	if (!singleLock.owns_lock())
 	{
 		return;
 	}
+
+	double currTime = _fcfuncs::millis();
 
 	// First run the sensors
 	std::thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));
@@ -551,7 +574,9 @@ void FishCenS::_sensors()
 
 	// Insert data into SQL table
 	scoped_lock sqlLock(_sqlLock);
-	_sqlObj.insertSensorData(data);
+	_sqlObj.insertSensorData(data); 
+
+	_fcfuncs::writeLog(_fcLogger, "Sensor time: " + to_string(_fcfuncs::millis() - currTime) + "ms", true);
 }
 
 void FishCenS::_sensorsThread(FishCenS *ptr)
@@ -579,8 +604,8 @@ int FishCenS::_showRectInfo(Mat &im)
 	string fishCountIncStr = "Fish -> upstream: " + to_string(_fishIncremented);
 	string fishCountDecstr = "Fish -> downstream: " + to_string(_fishDecremented);
 
-	// putText(im, fishCountIncStr, FISH_INC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, SENSOR_COLOR, SENSOR_STRING_THICKNESS);
-	// putText(im, fishCountDecstr, FISH_DEC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, SENSOR_COLOR, SENSOR_STRING_THICKNESS);
+	putText(im, fishCountIncStr, FISH_INC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, SENSOR_COLOR, SENSOR_STRING_THICKNESS);
+	putText(im, fishCountDecstr, FISH_DEC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, SENSOR_COLOR, SENSOR_STRING_THICKNESS);
 
 	// ML Data drawn
 	for (auto fishML : _objDetectData)
@@ -610,8 +635,9 @@ int FishCenS::_showRectInfo(Mat &im)
 	}
 
 	// Draw line for seeing middle
-	int midPoint = _fishTrackerObj.getFrameCenter() * 1/TRACKER_SCALE_FACTOR;
-	// line(im, Point(midPoint, 0), Point(midPoint, im.size().height), Scalar(0, 255, 255), 2);
+	//int midPoint = _fishTrackerObj.getFrameCenter() * 1/TRACKER_SCALE_FACTOR;
+	int midPoint = _frameSize.width / 2;
+	line(im, Point(midPoint, 0), Point(midPoint, im.size().height), Scalar(0, 255, 255), 2);
 
 	return true;
 }
@@ -721,9 +747,9 @@ void FishCenS::_trackerUpdate()
 	std::unique_lock<std::mutex> singleLock(_singletonTracker, std::try_to_lock);
 
 	if (!singleLock.owns_lock())
-	{
 		return;
-	}
+
+	double currTime = _fcfuncs::millis();
 
 	// Copy parameters to local variables to avoid problems in concurrency
 	Mat localFrame;
@@ -827,8 +853,15 @@ void FishCenS::_trackerUpdate()
 	vector<FishMLData> localObjDetectData;
 	{
 		scoped_lock objDetectLock(_objDetectLock);
+		
+		if(!_MLReady)
+		{
+			_fcfuncs::writeLog(_fcLogger, "Tracker time (no generate) with " + to_string(_fishTrackerObj.trackerAmount()) + " objects tracked: " + to_string(_fcfuncs::millis() - currTime) + "ms", true);
+			return;
+		}
+
+		_MLReady = false;			
 		localObjDetectData = _objDetectData;
-		_objDetectData.clear();
 	}
 
 	for(auto &fish : localObjDetectData)
@@ -839,6 +872,8 @@ void FishCenS::_trackerUpdate()
 	// Run fish tracker
 	if (localObjDetectData.size()>0)
 		_fishTrackerObj.generate(localFrame, localObjDetectData);
+	
+	_fcfuncs::writeLog(_fcLogger, "Tracker time (with generate) with " + to_string(_fishTrackerObj.trackerAmount()) + " objects tracked: " + to_string(_fcfuncs::millis() - currTime) + "ms", true);
 }
 
 void FishCenS::_trackerUpdateThread(FishCenS *ptr)
@@ -854,6 +889,8 @@ void FishCenS::_MLUpdate()
 	{
 		return;
 	}
+
+	double currTime = _fcfuncs::millis();
 
 	// Copy parameters to local variables to avoid problems in concurrency
 	Mat localFrame;
@@ -878,7 +915,12 @@ void FishCenS::_MLUpdate()
 	{
 		scoped_lock objDetectLock(_objDetectLock);
 		_objDetectData = localObjDetectData;
+
+		if(_objDetectData.size() >= 0)
+			_MLReady = true;
 	}
+
+	_fcfuncs::writeLog(_fcLogger, "ML time: " + to_string(_fcfuncs::millis() - currTime) + "ms", true);
 }
 
 void FishCenS::_MLUpdateThread(FishCenS *ptr)
@@ -896,6 +938,8 @@ void FishCenS::_loadFrame()
 
 	if(!singleLock.owns_lock())
 		return;
+
+	double currTime = _fcfuncs::millis();
 
 	Mat localFrame;
 
@@ -917,45 +961,32 @@ void FishCenS::_loadFrame()
 		_vid >> localFrame;
 		_vidNextFramePos++;
 
-		// // Loop video - Reset video to frame 0 if end of video is reached
-		// if (_vidNextFramePos >= _vidFramesTotal)
-		// {
-		// 	_vidNextFramePos = 0;
-		// 	_vid.set(CAP_PROP_POS_FRAMES, 0);
-		// }
+		// Loop video - Reset video to frame 0 if end of video is reached
+		if (_vidNextFramePos >= _vidFramesTotal)
+		{
+			_vidNextFramePos = 0;
+			_vid.set(CAP_PROP_POS_FRAMES, 0);
+		}
 
-		//resize(localFrame, localFrame, Size(_videoWidth, _videoHeight));
+		resize(localFrame, localFrame, _frameSize);
 	}
 	
 	//Dehaze
-
-	double currentTime = _fcfuncs::millis();
-
-	if(_dehaze.is_hazy(localFrame, 10, 20))
+	if(!_dehazeOff && _dehaze.is_hazy(localFrame, 10, 20))
 	{
     	bool color_correction = false, paused = false;
 		double factor_step = 0.05, initial_factor = 0.1, computation_time = 0;
  		_dehaze.dehaze_img(localFrame, localFrame, factor_step, initial_factor, color_correction, 10);
     }
 
-	cout << "Dehaze time: " << _fcfuncs::millis() - currentTime << "ms" << endl;
-
-	// Resize frame
-	// if (_mode != fcMode::VIDEO_RECORDER)
-	// {
-	// 	resize(localFrame, localFrame, Size(_videoWidth, _videoHeight));
-	// }
-
 	// std::unique_lock<std::mutex> frameLock(_frameLock, std::try_to_lock);
 	// if (frameLock.owns_lock())
 	{
 		scoped_lock frameLock(_frameLock);
-		_frame = localFrame;
+		_frame = localFrame.clone();
 	}
-	// else
-	// {
-	// 	_fcfuncs::writeLog(_fcLogger, "Frame skip\n", true);
-	// }
+
+	_fcfuncs::writeLog(_fcLogger, "Frame load time: " + to_string(_fcfuncs::millis() - currTime) + "ms", true);
 }
 
 void FishCenS::_loadFrameThread(FishCenS *ptr)

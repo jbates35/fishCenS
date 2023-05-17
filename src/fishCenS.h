@@ -28,7 +28,7 @@ namespace _fc
 	const int VIDEO_WIDTH	= 640; //px
 	const int VIDEO_HEIGHT	= 480; //px
 	const double VIDEO_SCALE_FACTOR = 1;
-	const double TRACKER_SCALE_FACTOR = 0.5;
+	const double TRACKER_SCALE_FACTOR = 0.75;
 	
 	const double LIGHT_REFRESH = 1000 * 60 * 30; //ms (1000ms * 60s * 30min)
 	
@@ -43,7 +43,7 @@ namespace _fc
 	const int MAX_LOG_SIZE	= 5000; //Max amount of lines the logger can have before erasing start
 	
 	//For timers (typically in milliseconds)
-	const double DRAW_FPS = 30; //FPS of opencv imshow
+	const double DRAW_FPS = 60; //FPS of opencv imshow
 	const double DRAW_PERIOD = 1000 / DRAW_FPS; //Period of opencv imshow in milliseconds
 	
 	const double DEPTH_PERIOD = 2000; //2000 //ms
@@ -53,7 +53,7 @@ namespace _fc
 	
 	const double TRACKING_TIMER = 30; // Just for update loop
 	
-	const double CAM_FPS = 30;
+	const double CAM_FPS = 60;
 	
 	const int SLEEP_TIMER	= 300; //milliseconds
 
@@ -168,6 +168,11 @@ public:
 	void pipelineOff() { _pipelineOff = true; }
 
 	/**
+	 * @brief Turns dehaze off from command line
+	*/
+	void dehazeOff() { _dehazeOff = true; }
+
+	/**
 	 * @brief Tells sensor objects to close
 	*/
 	void closePeripherals();
@@ -181,6 +186,7 @@ private:
 	bool _sensorsOff;
 	bool _ledOff;
 	bool _pipelineOff;
+	bool _dehazeOff;
 
 	//Pigpio related stuff
 	int _ledPwmFreq;

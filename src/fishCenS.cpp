@@ -227,7 +227,15 @@ int FishCenS::init(fcMode mode)
 		}
 
 		_vid.open(selectedVideoFile, CAP_FFMPEG);
+		
+		if(!_vid.isOpened())
+		{
+			_fcfuncs::writeLog(_fcLogger, "Video file not opened. Exiting to main loop.", true);
+			return -1;
+		}
 
+		cout << "LOADED VIDEO....\n\n\n\n\n" << endl;
+		
 		// Load frame to do analysis
 		_vid >> _frame;
 
@@ -884,6 +892,11 @@ void FishCenS::_loadFrame()
 	//	depending on whether the camera is being read or a test video is
 	//	instead being read.
 
+	std::unique_lock<std::mutex> singleLock(_singletonFrame, std::try_to_lock);
+
+	if(!singleLock.owns_lock())
+		return;
+
 	Mat localFrame;
 
 	// Read camera
@@ -895,8 +908,8 @@ void FishCenS::_loadFrame()
 			_fcfuncs::writeLog(_fcLogger, "Timeout error\n", true);
 			return;
 		}
-	}
-
+	} 
+	
 	// Read video
 	else
 	{
@@ -904,16 +917,16 @@ void FishCenS::_loadFrame()
 		_vid >> localFrame;
 		_vidNextFramePos++;
 
-		// Loop video - Reset video to frame 0 if end of video is reached
-		if (_vidNextFramePos >= _vidFramesTotal)
-		{
-			_vidNextFramePos = 0;
-			_vid.set(CAP_PROP_POS_FRAMES, 0);
-		}
+		// // Loop video - Reset video to frame 0 if end of video is reached
+		// if (_vidNextFramePos >= _vidFramesTotal)
+		// {
+		// 	_vidNextFramePos = 0;
+		// 	_vid.set(CAP_PROP_POS_FRAMES, 0);
+		// }
 
-		resize(localFrame, localFrame, Size(_videoWidth, _videoHeight));
+		//resize(localFrame, localFrame, Size(_videoWidth, _videoHeight));
 	}
-
+	
 	//Dehaze
 
 	double currentTime = _fcfuncs::millis();

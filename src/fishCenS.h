@@ -245,8 +245,8 @@ private:
 	mutex _sqlLock;
 	mutex _trackerLock;
 	mutex _objDetectLock;
-	
-	mutex _singletonDraw, _singletonTracker, _singletonUpdate, _singletonML;
+
+	mutex _singletonDraw, _singletonTracker, _singletonUpdate, _singletonML, _singletonFrame;
 	
 	//Logger stuff
 	vector<string> _fcLogger;

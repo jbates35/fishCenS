@@ -29,11 +29,15 @@ void FishPipeline::init(string ip_address_str, string multicast_address_str, uns
     //set socket options
     _socket.open(boost::asio::ip::udp::v4());
     _socket.set_option(boost::asio::ip::udp::socket::reuse_address(true));
+    _socket.set_option(boost::asio::ip::multicast::enable_loopback(true));
 
     //Join multicast group
     _multicast_address = boost::asio::ip::address::from_string(multicast_address_str);
     _ip_address = boost::asio::ip::address::from_string(ip_address_str);    
     _socket.set_option(boost::asio::ip::multicast::join_group(_multicast_address));
+
+    if(!_socket.is_open())
+        throw FishPipelineException("Socket not open");
 }
 
 void FishPipeline::write(cv::Mat &frame)

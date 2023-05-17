@@ -52,8 +52,8 @@ FishCenS::~FishCenS()
 	destroyAllWindows();
 	_cam.stopVideo();
 
-	if(!_pipelineOff)
-		_fishPipe.close();
+	// if(!_pipelineOff)
+	// 	_fishPipe.close();
 
 	// Turn LED off
 	gpioSetMode(LED_PIN, PI_OUTPUT);
@@ -300,7 +300,7 @@ int FishCenS::init(fcMode mode)
 	if (_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO)
 	{
 		_fishTrackerObj.setMode(ftMode::CALIBRATION);
-		_gui_object.init(_fishTrackerObj);
+		// _gui_object.init(_fishTrackerObj);
 	}
 
 	// Initiate calibration parameters
@@ -337,8 +337,8 @@ int FishCenS::init(fcMode mode)
 	}
 
 	//Make pipeline
-	if(!_pipelineOff)
-		_fishPipe.init();
+	// if(!_pipelineOff)
+	// 	_fishPipe.init();
 
 	return 1;
 }
@@ -357,7 +357,7 @@ int FishCenS::_draw()
 	// If display is off, just return - But we need the named window for the video record
 	// so that the key can be caught and the video can start to be recorded
 	// Also, if it's in calibration, we need that display anyway
-	if (!_displayOn && !_pipelineOff && !(_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO))
+	if (!_displayOn && _pipelineOff && !(_mode == fcMode::CALIBRATION || _mode == fcMode::CALIBRATION_WITH_VIDEO))
 	{
 		if (_mode == fcMode::VIDEO_RECORDER)
 		{
@@ -397,7 +397,7 @@ int FishCenS::_draw()
 		vconcat(_returnMats[0].mat, _returnMats[1].mat, _frameDraw);
 
 		// Update with trackbars
-		_gui_object._gui(_frameDraw, _fishTrackerObj);
+		// _gui_object._gui(_frameDraw, _fishTrackerObj);
 	}
 
 	// Get a local copy of the frame for concurrency
@@ -424,39 +424,48 @@ int FishCenS::_draw()
 		}
 	}
 
-	// With tracking mode, we need sensor information (Maybe need this for calibration mode w video too?)
-	if (_mode == fcMode::TRACKING && !_sensorsOff)
-	{
-		// Sensor strings to put on screen
-		{
-			// Lock depth lock guard
-			string depthStr = "Depth: " + to_string(_currentDepth);
-			putText(localFrame, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
-		}
+	// // With tracking mode, we need sensor information (Maybe need this for calibration mode w video too?)
+	// if (_mode == fcMode::TRACKING && !_sensorsOff)
+	// {
+	// 	// Sensor strings to put on screen
+	// 	{
+	// 		// Lock depth lock guard
+	// 		string depthStr = "Depth: " + to_string(_currentDepth);
+	// 		putText(localFrame, depthStr, DEPTH_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+	// 	}
 
-		{
-			// Lock temp lock guard
-			// lock_guard<mutex> guard(_tempLock);
-			string tempStr = "Temperature: " + to_string(_currentTemp);
-			putText(localFrame, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
-		}
-	}
+	// 	{
+	// 		// Lock temp lock guard
+	// 		// lock_guard<mutex> guard(_tempLock);
+	// 		string tempStr = "Temperature: " + to_string(_currentTemp);
+	// 		putText(localFrame, tempStr, TEMP_STRING_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, YELLOW, SENSOR_STRING_THICKNESS);
+	// 	}
+	// }
 
 	if (_displayOn && !localFrame.empty() && (_mode != fcMode::CALIBRATION && _mode != fcMode::CALIBRATION_WITH_VIDEO))
 	{
 		imshow("Video", localFrame);
 	}
+	else 
+	{
+		namedWindow ("_BLANK", WINDOW_NORMAL);
+	}
 
 	_returnKey = waitKey(1);
 
 	// Update the pipeline
-	if(!_pipelineOff && ((_fcfuncs::millis()-_timers["pipeline"])>=PIPELINE_PERIOD))
+	if(!_pipelineOff && (_fcfuncs::millis()-_timers["pipeline"])>=PIPELINE_PERIOD)
 	{
 		_timers["pipeline"] = _fcfuncs::millis();
-		_fishPipe.write(localFrame);
-		//cout << "Pipeline time: " << _fcfuncs::millis() - _timers["pipeline"] << "ms" << endl;
-	}
 
+		FishPipeline fishPipe;
+		fishPipe.init("", "239.254.0.3", 30002);
+		fishPipe.write(localFrame);
+		fishPipe.close();
+
+		cout << "Pipeline time: " << _fcfuncs::millis() - _timers["pipeline"] << "ms" << endl;
+	}
+	
 	return 1;
 }
 
@@ -500,6 +509,11 @@ void FishCenS::_sensors()
 	cout << "Thread starting..." << endl;
 
 	unique_lock<mutex> singleLock(_sensorsLock, try_to_lock);
+	
+	if (!singleLock.owns_lock())
+	{
+		return;
+	}
 
 	// First run the sensors
 	std::thread temperatureThread(Temperature::getTemperature, ref(_currentTemp), ref(_tempLock));
@@ -510,16 +524,6 @@ void FishCenS::_sensors()
 	{
 		depthObj->getDepth(_currentDepth, _depthLock);
 	}
-	// if(_depthOpen<0)
-	// {
-	// 	_depthOpen = _depthObj->init();
-	// }
-	// else
-	// {
-	// 	_depthObj -> getDepth(_currentDepth, _depthLock);
-	// 	// std::thread depthThread(&Depth::run, ref(*depthObj), ref(_currentDepth), ref(_depthLock));
-	//     // depthThread.join();
-	// }
 
 	temperatureThread.join();
 
@@ -567,9 +571,8 @@ int FishCenS::_showRectInfo(Mat &im)
 	string fishCountIncStr = "Fish -> upstream: " + to_string(_fishIncremented);
 	string fishCountDecstr = "Fish -> downstream: " + to_string(_fishDecremented);
 
-
-	putText(im, fishCountIncStr, FISH_INC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, SENSOR_COLOR, SENSOR_STRING_THICKNESS);
-	putText(im, fishCountDecstr, FISH_DEC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, SENSOR_COLOR, SENSOR_STRING_THICKNESS);
+	// putText(im, fishCountIncStr, FISH_INC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, SENSOR_COLOR, SENSOR_STRING_THICKNESS);
+	// putText(im, fishCountDecstr, FISH_DEC_POINT, FONT_HERSHEY_PLAIN, SENSOR_STRING_SIZE, SENSOR_COLOR, SENSOR_STRING_THICKNESS);
 
 	// ML Data drawn
 	for (auto fishML : _objDetectData)
@@ -600,7 +603,7 @@ int FishCenS::_showRectInfo(Mat &im)
 
 	// Draw line for seeing middle
 	int midPoint = _fishTrackerObj.getFrameCenter() * 1/TRACKER_SCALE_FACTOR;
-	line(im, Point(midPoint, 0), Point(midPoint, im.size().height), Scalar(0, 255, 255), 2);
+	// line(im, Point(midPoint, 0), Point(midPoint, im.size().height), Scalar(0, 255, 255), 2);
 
 	return true;
 }
@@ -615,8 +618,6 @@ void FishCenS::_setLED()
 		return;
 	}
 
-	gpioHardwarePWM(LED_PIN, _ledPwmFreq, 100000);
-	/*
 	if (_ledOff)
 	{
 		gpioHardwarePWM(LED_PIN, _ledPwmFreq, 0);
@@ -679,7 +680,6 @@ void FishCenS::_setLED()
 		// Set the PWM value of the gpioPin to pwmVal
 		gpioHardwarePWM(LED_PIN, _ledPwmFreq, _ledPwmDC);
 	}
-	*/
 }
 
 void FishCenS::_manageVideoRecord()
@@ -898,7 +898,7 @@ void FishCenS::_loadFrame()
 	}
 
 	// Read video
-	if (_mode == fcMode::TRACKING_WITH_VIDEO || _mode == fcMode::CALIBRATION_WITH_VIDEO)
+	else
 	{
 		// Load frame and advance position of video
 		_vid >> localFrame;
@@ -910,13 +910,28 @@ void FishCenS::_loadFrame()
 			_vidNextFramePos = 0;
 			_vid.set(CAP_PROP_POS_FRAMES, 0);
 		}
+
+		resize(localFrame, localFrame, Size(_videoWidth, _videoHeight));
 	}
 
-	// Resize frame
-	if (_mode != fcMode::VIDEO_RECORDER)
+	//Dehaze
+
+	double currentTime = _fcfuncs::millis();
+
+	if(_dehaze.is_hazy(localFrame, 10, 20))
 	{
-		//resize(localFrame, localFrame, Size(_videoWidth, _videoHeight));
-	}
+    	bool color_correction = false, paused = false;
+		double factor_step = 0.05, initial_factor = 0.1, computation_time = 0;
+ 		_dehaze.dehaze_img(localFrame, localFrame, factor_step, initial_factor, color_correction, 10);
+    }
+
+	cout << "Dehaze time: " << _fcfuncs::millis() - currentTime << "ms" << endl;
+
+	// Resize frame
+	// if (_mode != fcMode::VIDEO_RECORDER)
+	// {
+	// 	resize(localFrame, localFrame, Size(_videoWidth, _videoHeight));
+	// }
 
 	// std::unique_lock<std::mutex> frameLock(_frameLock, std::try_to_lock);
 	// if (frameLock.owns_lock())

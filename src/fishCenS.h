@@ -13,9 +13,10 @@
 #include "misc/videoRecord.h"
 #include "sensor/Depth.h"
 #include "sensor/Temperature.h"
-#include "gui/gui.h"
-#include "gui/imex.h"
+// #include "gui/gui.h"
+// #include "gui/imex.h"
 #include "database/sqlManager.h"
+#include "misc/dehaze.h"
 
 using namespace std;
 using namespace cv;
@@ -36,7 +37,7 @@ namespace _fc
 	
 	const string LOGGER_PATH = "./logData"; // Folder path for Logging data
 	
-	const string TEST_VIDEO_PATH = "./testVideos/"; // Folder for seeing videos - NOTE: CANNOT HAVE SLASH AT END
+	const string TEST_VIDEO_PATH = "./vid/"; // Folder for seeing videos - NOTE: CANNOT HAVE SLASH AT END
 	const string TEST_VIDEO_FILE = "blue_fish_daytime_1.avi";
 	
 	const int MAX_LOG_SIZE	= 5000; //Max amount of lines the logger can have before erasing start
@@ -48,7 +49,7 @@ namespace _fc
 	const double DEPTH_PERIOD = 2000; //2000 //ms
 	const double TEMPERATURE_PERIOD = 2000; //ms
 	const double SENSORS_PERIOD = 1000 * 4 ; //* 60; //ms -> 1 min
-	const double PIPELINE_PERIOD = 60; //ms
+	const double PIPELINE_PERIOD = 100; //ms
 	
 	const double TRACKING_TIMER = 30; // Just for update loop
 	
@@ -88,7 +89,7 @@ namespace _fc
 	const Scalar WHITE = Scalar(255, 255, 255);
 	const Scalar GREY = Scalar(180, 180, 180);
 
-	const string VIDEO_PATH = "./testVideos/";
+	const string VIDEO_PATH = "./vid/";
 	const string PIC_BASE_PATH = "./fishPictures/";
 
 }
@@ -229,6 +230,8 @@ private:
 	double _vidFPS;
 	double _vidPeriod;
 	
+	dehaze _dehaze;
+
 	//Mutex for threadlocking/threading
 	vector<thread> _threadVector;
 	mutex _baseLock;
@@ -263,7 +266,7 @@ private:
 	double _currentTemp;
 	
 	//Trackbars and GUI stuff
-  	gui _gui_object;
+  	// gui _gui_object;
 
 	//Sql database
 	sqlManager _sqlObj;
